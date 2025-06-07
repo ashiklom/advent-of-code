@@ -18,7 +18,7 @@ for c in range(ncol):
     xmas += count(col)
 
 # Diagonals
-for r in range(nrow-3):
+for r in range(nrow):
     for c in range(ncol):
         # Down right
         dri = zip(range(r,r+4), range(c,c+4))
@@ -28,7 +28,7 @@ for r in range(nrow-3):
             dr = ""
         xmas += count(dr)
         # Down left
-        dli = zip(range(r,r+4), range(c+3,c-1))
+        dli = zip(range(r,r+4), range(c+3,c-1,-1))
         try:
             dl = "".join(rows[a][b] for a,b in dli)
         except IndexError:
