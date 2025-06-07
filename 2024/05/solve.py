@@ -26,14 +26,19 @@ def apply_rules(page: list):
 results = [apply_rules(page) for page in pages]
 print(sum(results))
 
+invalid = [page for i, page in enumerate(pages) if results[i] is False]
+# print(len(pages))
+# print(len(valid))
+# print(valid[0:5])
+
+import graphlib
+
 # Part 2
-def apply_rules2(page: list):
-    pc = page.copy()
-    result = []
-    for _ in range(len(page)):
-        item = pc.pop()
-        r = rules[item]
-        if any(rr in pc for rr in r):
-            return False
-    # All rules satisfied. Now, apply sorting.
+def sort_rules(page: list):
+    ps = set(page)
+    rlist = {item: set(rules[item]).intersection(ps) for item in ps}
+    result = list(graphlib.TopologicalSorter(rlist).static_order())
     return int(result[len(result)//2])
+
+results2 = [sort_rules(page) for page in invalid]
+print(sum(results2))
