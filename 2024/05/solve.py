@@ -15,20 +15,25 @@ pages = [s.split(",") for s in raw[(blank+1):]]
 
 def apply_rules(page: list):
     pc = page.copy()
-    # print("-----")
-    # print(f"orig: {pc}")
     for _ in range(len(page)):
         item = pc.pop()
         r = rules[item]
-        # print(item)
-        # print(r)
-        # print(pc)
         if any(rr in pc for rr in r):
             return False
     # All rules satisfied
     return int(page[len(page)//2])
 
-# results = [apply_rules(page) for page in pages[:1]]
 results = [apply_rules(page) for page in pages]
 print(sum(results))
-# print(results[0:20])
+
+# Part 2
+def apply_rules2(page: list):
+    pc = page.copy()
+    result = []
+    for _ in range(len(page)):
+        item = pc.pop()
+        r = rules[item]
+        if any(rr in pc for rr in r):
+            return False
+    # All rules satisfied. Now, apply sorting.
+    return int(result[len(result)//2])
