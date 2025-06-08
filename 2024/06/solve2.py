@@ -6,10 +6,9 @@ with open("2024/06/input") as f:
 nrow = len(grid)
 ncol = len(grid[0])
 
-result = deepcopy(grid)
 # Find starting position
 rc = (0, 0)
-for idx,row in enumerate(result):
+for idx,row in enumerate(grid):
     for g in "^>v<":
         try:
             rc = (idx, row.index(g))
@@ -47,27 +46,55 @@ def turn(guard):
         case _:
             ValueError("Invalid guard")
 
-guard = result[rc[0]][rc[1]]
+def is_loop(grid, guard0, rc0):
+    guard = guard0
+    rc = rc0
+    history = set()
+    while True:
+        nxt = go(guard, rc)
+        if not (0 <= nxt[0] < nrow):
+            return False
+        if not (0 <= nxt[1] < ncol):
+            return False
+        target = grid[nxt[0]][nxt[1]]
+        if target == "#":
+            guard = turn(guard)
+            if (guard, rc) in history:
+                return True
+        else:
+            history.add((guard, rc))
+            rc = nxt
 
 # Initial guard state
+guard = grid[rc[0]][rc[1]]
 guard0 = guard
 rc0 = rc
 
+loops = 0
+
+step = 0
+
 while True:
-    result[rc[0]][rc[1]] = "X"
+    step += 1
+    if step % 100 == 0:
+        print(f"step {step}")
+        print(f"current loops: {loops}")
     nxt = go(guard, rc)
     if not (0 <= nxt[0] < nrow):
         break
     if not (0 <= nxt[1] < nrow):
         break
-    target = result[nxt[0]][nxt[1]]
+    target = grid[nxt[0]][nxt[1]]
     if target == "#":
         guard = turn(guard)
     else:
+        # See if adding an obstacle at nxt creates a loop
+        newgrid = deepcopy(grid)
+        newgrid[nxt[0]][nxt[1]] = "#"
+        loops += is_loop(newgrid, guard0, rc0)
         rc = nxt
 
-solution = "\n".join("".join(row) for row in result)
-print(solution.count("X"))
+print(loops)
 
 # Part 2
 # At each X position of the solved grid (except
@@ -77,33 +104,3 @@ print(solution.count("X"))
 # same direction, you're in a loop.
 # So just replace X with guard as the state marker, 
 # and exit if the next guard matches the saved state.
-
-def is_loop(grid):
-    guard = guard0
-    rc = rc0
-    history = []
-    while True:
-        history += [(guard, rc)]
-        nxt = go(guard, rc)
-        if not (0 <= nxt[0] < nrow):
-            return False
-        if not (0 <= nxt[1] < ncol):
-            return False
-        target = grid[nxt[0]][nxt[1]]
-        if target == "#":
-            guard = turn(guard)
-        else:
-            rc = nxt
-        if (guard, rc) in history:
-            return True
-
-loops = 0
-for r, row in enumerate(result):
-    if "X" in row:
-        for c, item in enumerate(row):
-            if item == "X":
-                newgrid = deepcopy(grid)
-                newgrid[r][c] = "#"
-                loops += is_loop(newgrid)
-
-print(loops)
