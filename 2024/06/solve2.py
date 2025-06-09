@@ -51,6 +51,8 @@ def is_loop(grid, guard0, rc0):
     rc = rc0
     history = set()
     while True:
+        if (guard, rc) in history:
+            return True
         nxt = go(guard, rc)
         if not (0 <= nxt[0] < nrow):
             return False
@@ -59,8 +61,6 @@ def is_loop(grid, guard0, rc0):
         target = grid[nxt[0]][nxt[1]]
         if target == "#":
             guard = turn(guard)
-            if (guard, rc) in history:
-                return True
         else:
             history.add((guard, rc))
             rc = nxt
@@ -70,15 +70,21 @@ guard = grid[rc[0]][rc[1]]
 guard0 = guard
 rc0 = rc
 
-loops = 0
+loops = set()
 
 step = 0
 
 while True:
+    if step > 0:
+        # See if adding an obstacle at nxt creates a loop
+        newgrid = deepcopy(grid)
+        newgrid[rc[0]][rc[1]] = "#"
+        if is_loop(newgrid, guard0, rc0):
+            loops.add(rc)
     step += 1
     if step % 100 == 0:
         print(f"step {step}")
-        print(f"current loops: {loops}")
+        print(f"current loops: {len(loops)}")
     nxt = go(guard, rc)
     if not (0 <= nxt[0] < nrow):
         break
@@ -88,13 +94,9 @@ while True:
     if target == "#":
         guard = turn(guard)
     else:
-        # See if adding an obstacle at nxt creates a loop
-        newgrid = deepcopy(grid)
-        newgrid[nxt[0]][nxt[1]] = "#"
-        loops += is_loop(newgrid, guard0, rc0)
         rc = nxt
 
-print(loops)
+print(len(loops))
 
 # Part 2
 # At each X position of the solved grid (except
