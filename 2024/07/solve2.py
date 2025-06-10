@@ -21,12 +21,15 @@ def apply(fs, nums):
     return r
 
 def attempt(answer, nums):
-    for fs in flist(len(nums)-1):
+    fs1 = set(flist(len(nums)-1))
+    for fs in fs1:
         r = apply(fs, nums)
         if r == answer:
             return r
 
-    for fs in flist2(len(nums)-1):
+    fs2_all = set(flist2(len(nums)-1))
+    fs2 = fs2_all.difference(fs1)
+    for fs in fs2:
         r = apply(fs, nums)
         if r == answer:
             return r
