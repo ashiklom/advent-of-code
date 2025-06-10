@@ -1,3 +1,4 @@
+# vim: set wrap linebreak :
 Day 7 - Advent of Code 2024
 --- Day 7: Bridge Repair ---
 The Historians take you to a familiar rope bridge over a river in the middle of a jungle. The Chief isn't on this side of the bridge, though; maybe he's on the other side?
@@ -17,6 +18,7 @@ For example:
 192: 17 8 14
 21037: 9 7 18 13
 292: 11 6 16 20
+
 Each line represents a single equation. The test value appears before the colon on each line; it is your job to determine whether the remaining numbers can be combined with operators to produce the test value.
 
 Operators are always evaluated left-to-right, not according to precedence rules. Furthermore, numbers in the equations cannot be rearranged. Glancing into the jungle, you can see elephants holding two different types of operators: add (+) and multiply (*).
