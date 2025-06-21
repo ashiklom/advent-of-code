@@ -40,21 +40,21 @@ class Matrix:
             self._it += 1
             return (r, c, self[r,c].val())
 
-    def search(self, r, c, summits: set):
+    def search(self, r, c, trails: int):
         x = self[r, c].val()
         if x == 9:
-            summits.add((r, c))
-            return summits
+            trails += 1
+            return trails
         nxt = x + 1
         if (c-1) >= 0 and self[r, c-1].val() == nxt:
-            summits = self.search(r, c-1, summits)
+            trails = self.search(r, c-1, trails)
         if (c+1) < self.ncol and self[r, c+1].val() == nxt:
-            summits = self.search(r, c+1, summits)
+            trails = self.search(r, c+1, trails)
         if (r-1) >= 0 and self[r-1, c].val() == nxt:
-            summits = self.search(r-1, c, summits)
+            trails = self.search(r-1, c, trails)
         if (r+1) < self.nrow and self[r+1, c].val() == nxt:
-            summits = self.search(r+1, c, summits)
-        return summits
+            trails = self.search(r+1, c, trails)
+        return trails
 
 # with open("2024/10/test", "r") as f:
 with open("2024/10/input", "r") as f:
@@ -67,8 +67,8 @@ result = {}
 for r, c, x in dat:
     if x != 0:
         continue
-    summits = dat.search(r, c, set())
-    if summits:
-        result[(r, c)] = (len(summits), summits)
+    trails = dat.search(r, c, 0)
+    if trails:
+        result[(r, c)] = trails
 
-print(sum(r[0] for r in result.values()))
+print(sum(result.values()))
