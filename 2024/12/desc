@@ -86,6 +86,7 @@ So, it has a total price of 1930.
 What is the total price of fencing all regions on your map?
 
 Part Two ---
+
 Fortunately, the Elves are trying to order so much fence that they qualify for a bulk discount!
 
 Under the bulk discount, instead of using the perimeter to calculate the price, you need to use the number of sides each region has. Each straight section of fence counts as a side, regardless of how long it is.
@@ -109,6 +110,7 @@ EXXXX
 EEEEE
 EXXXX
 EEEEE
+
 The E-shaped region has an area of 17 and 12 sides for a price of 204. Including the two regions full of type X plants, this map has a total price of 236.
 
 This map has a total price of 368:
