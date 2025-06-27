@@ -1,6 +1,7 @@
 # vim: set wrap linebreak :
 
 -- Day 12: Garden Groups ---
+
 Why not search for the Chief Historian near the gardener and his massive farm? There's plenty of food, so The Historians grab something to eat while they search.
 
 You're about to settle near a complex arrangement of garden plots when some Elves ask if you can lend a hand. They'd like to set up fences around each region of garden plots, but they can't figure out how much fence they need to order or how much it will cost. They hand you a map (your puzzle input) of the garden plots.
@@ -11,6 +12,7 @@ AAAA
 BBCD
 BBCC
 EEEC
+
 This 4x4 arrangement includes garden plots growing five different types of plants (labeled A, B, C, D, and E), each grouped into their own region.
 
 In order to accurately calculate the cost of the fence around a single region, you need to know that region's area and perimeter.
@@ -34,6 +36,7 @@ Visually indicating the sides of plots in each region that contribute to the per
 +-+-+-+   +-+
 |E E E|
 +-+-+-+
+
 Plants of the same type can appear in multiple separate regions, and regions can even appear within other regions. For example:
 
 OOOOO
@@ -41,6 +44,7 @@ OXOXO
 OOOOO
 OXOXO
 OOOOO
+
 The above map contains five regions, one containing all of the O garden plots, and the other four each containing a single X plot.
 
 The four X regions each have area 1 and perimeter 4. The region containing 21 type O plants is more complicated; in addition to its outer edge contributing a perimeter of 20, its boundary with each X region contributes an additional 4 to its perimeter, for a total perimeter of 36.
@@ -63,6 +67,7 @@ VVIIICJJEE
 MIIIIIJJEE
 MIIISIJEEE
 MMMISSJEEE
+
 It contains:
 
 A region of R plants with price 12 * 18 = 216.
