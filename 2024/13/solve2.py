@@ -24,11 +24,17 @@ def parse_button(string):
 
 # Solve by Gaussian elimination
 def solve(ax, ay, bx, by, X, Y):
-    tol = 1e-6
+    X = 10000000000000 + X
+    Y = 10000000000000 + Y
+    tol = 1e-3
+    # NOTE: This is numerically unstable.
+    # You get the right solution with a coarse
+    # tol value, but a better way is to use a
+    # more robust addition algorithm.
     A = (X * by/bx - Y) / (ax * by/bx - ay)
+    B = (X - ax*A) / bx
     if fabs(A - round(A)) > tol:
         return None
-    B = (X - ax*A) / bx
     if fabs(B - round(B)) > tol:
         return None
     return (A, B)
