@@ -39,4 +39,5 @@ q4 = [r for r in robots if r.px > xmid and r.py > ymid]
 
 result = len(q1)*len(q2)*len(q3)*len(q4)
 print(result)
+# Too low
 # 92887200
