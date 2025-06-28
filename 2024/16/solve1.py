@@ -1,8 +1,8 @@
 from copy import deepcopy
 
-fname = "2024/16/test1"
+# fname = "2024/16/test1"
 # fname = "2024/16/test2"
-# fname = "2024/16/input"
+fname = "2024/16/input"
 
 with open(fname, "r") as f:
     raw = f.read().strip()
@@ -34,15 +34,15 @@ def routes(r: int, c: int, current_route: list) -> list[tuple[int, int]]:
     return options
 
 def draw(rte: list):
+    g = deepcopy(grid)
     for r, c in rte:
-        if grid[r][c] not in ("S", "E"):
-            grid[r][c] = "x"
-    print("\n".join("".join(row) for row in grid))
+        if g[r][c] not in ("S", "E"):
+            g[r][c] = "x"
+    print("\n".join("".join(row) for row in g))
     print("-"*12)
 
 sr, sc = i2rc(raw.find("S"), ncol)
 er, ec = i2rc(raw.find("E"), ncol)
-
 
 # Initial direction: East
 dr, dc = (0, 1)
@@ -51,17 +51,16 @@ dr, dc = (0, 1)
 r = sr
 c = sc
 forks = []
-exits = []
+exits = set()
 current_route = []
 while True:
     current_route.append((r, c))
     if grid[r][c] == "E":
-        exits.append(current_route.copy())
-        print("exit. looking for other routes")
+        exits.add(tuple(current_route))
+        # print("exit. looking for other routes")
         # Return to a previous fork
         fork = forks[-1]
-        current_route = fork["route"]
-        draw(current_route)
+        current_route = fork["route"].copy()
         r, c = fork["opts"].pop()
         if not fork["opts"]:
             forks.pop()
@@ -70,27 +69,41 @@ while True:
     if not opts:
         # Dead end. Return to last fork and pick
         # a different route.
-        print("doubling back")
+        # print("doubling back")
         try:
             fork = forks[-1]
-            current_route = fork["route"]
-            draw(current_route)
+            current_route = fork["route"].copy()
             r, c = fork["opts"].pop()
             if not fork["opts"]:
                 # No more options at this fork
                 forks.pop()
-        except Exception as err:
+        except IndexError:
             # We have explored the entire maze!
-            print(f"error: {err}")
             break
         continue
     r, c = opts.pop()
     if len(opts) > 0:
         # Mark the fork and take first option.
-        print("fork discovered")
-        draw(current_route)
-        forks.append({"route": current_route,
+        # print("fork discovered")
+        # draw(current_route)
+        forks.append({"route": current_route.copy(),
                       "opts": opts})
 
-for rte in exits:
-    draw(rte)
+def point(rte):
+    pts = len(rte)-1
+    # Start facing East
+    dr, dc = (0,1)
+    for i in range(1, len(rte)):
+        drn = rte[i][0] - rte[i-1][0]
+        dcn = rte[i][1] - rte[i-1][1]
+        if (dr, dc) != (drn, dcn):
+            pts += 1000
+            dr = drn
+            dc = dcn
+    return pts
+
+points = map(point, exits)
+print(min(points))
+# print(len(exits))
+# for rte in exits:
+#     draw(rte)
