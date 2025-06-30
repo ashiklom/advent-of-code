@@ -26,6 +26,10 @@ class Robot:
     def __repr__(self):
         return f"p: {(self.px, self.py)}  v:{(self.vx, self.vy)}"
 
+
+def ctree(robots: list[Robot]) -> bool:
+    return False
+
 robots = [Robot(s) for s in raw]
 [r.move(100) for r in robots]
 
