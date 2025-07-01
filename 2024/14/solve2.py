@@ -28,20 +28,58 @@ class Robot:
 
 
 def ctree(robots: list[Robot]) -> bool:
-    return False
+    # Unique locations
+    rows = {}
+    for r in robots:
+        if r.py not in rows:
+            rows[r.py] = set()
+        rows[r.py].add(r.px)
+
+    for key, val in rows.items():
+        n = len(val)
+        if n == 1:
+            break
+    else:
+        return False
+
+    try:
+        r = rows[key+1]
+    except KeyError:
+        return False
+    x = val.pop()
+    v = (x-1, x, x+1)
+    if not all(x in r for x in v):
+        return False
+
+    try:
+        r = rows[key+2]
+    except KeyError:
+        return False
+    v = (x-2, x-1, x, x+1, x+2)
+    if not all(x in r for x in v):
+        return False
+
+    try:
+        r = rows[key+3]
+    except KeyError:
+        return False
+    v = (x-3, x-2, x-1, x, x+1, x+2, x+3)
+    if not all(x in r for x in v):
+        return False
+
+    return True
 
 robots = [Robot(s) for s in raw]
-[r.move(100) for r in robots]
+i = 0
+# i = 1600000
+# [r.move(1600000) for r in robots]
+while not ctree(robots):
+    i += 1
+    [r.move(1) for r in robots]
+    if i % 100_000 == 0:
+        print(i)
+    if i > 1_000:
+        raise ValueError
 
-xmid = ncol // 2
-ymid = nrow // 2
-
-q1 = [r for r in robots if r.px < xmid and r.py < ymid]
-q2 = [r for r in robots if r.px > xmid and r.py < ymid]
-q3 = [r for r in robots if r.px < xmid and r.py > ymid]
-q4 = [r for r in robots if r.px > xmid and r.py > ymid]
-
-result = len(q1)*len(q2)*len(q3)*len(q4)
-print(result)
-# Too low
-# 92887200
+print("Found!")
+print(i)
