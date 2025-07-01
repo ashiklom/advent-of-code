@@ -1,4 +1,5 @@
 import re
+from itertools import pairwise
 
 # fname = "2024/14/test1"
 # nrow, ncol = (7, 11)
@@ -9,77 +10,72 @@ with open(fname, "r") as f:
 
 ptrn = re.compile(r"p=(\d+),(\d+) v=(-?\d+),(-?\d+)")
 
+# Get robots
+px = []
+py = []
+vx = []
+vy = []
 
-class Robot:
-
-    def __init__(self, string: str):
-        m = ptrn.match(string)
-        if not m:
-            raise ValueError(f"Invalid string {string}")
-        grps = tuple(map(int, m.groups()))
-        self.px, self.py, self.vx, self.vy = grps
-
-    def move(self, t=1):
-        self.px = (self.px + self.vx*t) % ncol
-        self.py = (self.py + self.vy*t) % nrow
-
-    def __repr__(self):
-        return f"p: {(self.px, self.py)}  v:{(self.vx, self.vy)}"
+for s in raw:
+    m = ptrn.match(s)
+    if not m:
+        raise ValueError
+    grps = tuple(map(int, m.groups()))
+    px.append(grps[0])
+    py.append(grps[1])
+    vx.append(grps[2])
+    vy.append(grps[3])
 
 
-def ctree(robots: list[Robot]) -> bool:
+def move(t):
+    for i,_ in enumerate(raw):
+        px[i] = (px[i] + vx[i]*t) % ncol
+        py[i] = (py[i] + vy[i]*t) % nrow
+
+
+def in_a_row(x: list[int], n: int = 6):
+    nx = len(x)
+    if nx < n:
+        return False
+    filter = list(range(n))
+    xs = sorted(x)
+    for i in range(0, nx-n):
+        sub = [x-xs[i] for x in xs[i:(i+n)]]
+        if sub == filter:
+            return True
+    return False
+
+def ctree(px, py) -> bool:
     # Unique locations
+    cells = {(x,y) for x,y in zip(px, py)}
     rows = {}
-    for r in robots:
-        if r.py not in rows:
-            rows[r.py] = set()
-        rows[r.py].add(r.px)
+    for x,y in cells:
+        if y not in rows:
+            rows[y] = []
+        rows[y].append(x)
 
-    for key, val in rows.items():
-        n = len(val)
-        if n == 1:
-            break
-    else:
-        return False
+    for _, row in rows.items():
+        if in_a_row(row, 8):
+            return True
+    
+    return False
 
-    try:
-        r = rows[key+1]
-    except KeyError:
-        return False
-    x = val.pop()
-    v = (x-1, x, x+1)
-    if not all(x in r for x in v):
-        return False
+def draw(px, py):
+    cells = {(x,y) for x,y in zip(px,py)}
+    grid = [["." for _ in range(ncol)] for _ in range(nrow)]
+    for x, y in cells:
+        grid[y][x] = "x"
+    result = "\n".join("".join(g) for g in grid)
+    print(result)
 
-    try:
-        r = rows[key+2]
-    except KeyError:
-        return False
-    v = (x-2, x-1, x, x+1, x+2)
-    if not all(x in r for x in v):
-        return False
-
-    try:
-        r = rows[key+3]
-    except KeyError:
-        return False
-    v = (x-3, x-2, x-1, x, x+1, x+2, x+3)
-    if not all(x in r for x in v):
-        return False
-
-    return True
-
-robots = [Robot(s) for s in raw]
 i = 0
-# i = 1600000
-# [r.move(1600000) for r in robots]
-while not ctree(robots):
+while not ctree(px, py):
     i += 1
-    [r.move(1) for r in robots]
+    move(1)
     if i % 100_000 == 0:
         print(i)
-    if i > 1_000:
-        raise ValueError
 
 print("Found!")
+draw(px, py)
 print(i)
+# 7492
