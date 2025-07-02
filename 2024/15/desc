@@ -1,8 +1,6 @@
 # vim: set wrap linebreak :
 
 Day 15 - Advent of Code 2024
-Our sponsors help make Advent of Code possible:
-BJSS - Delivered by teams of passionate experts, we provide brilliant software engineering that delivers transformative outcomes for our clients.
 --- Day 15: Warehouse Woes ---
 You appear back inside your own mini submarine! Each Historian drives their mini submarine in a different direction; maybe the Chief has his own submarine down here somewhere as well?
 
@@ -270,6 +268,7 @@ The larger example from before would now look like this:
 ##..[][]..[]..[][]##
 ##........[]......##
 ####################
+
 Because boxes are now twice as wide but the robot is still the same size and speed, boxes can be aligned such that they directly push two other boxes at once. For example, consider this situation:
 
 #######
@@ -281,9 +280,11 @@ Because boxes are now twice as wide but the robot is still the same size and spe
 #######
 
 <vv<<^^<<^^
+
 After appropriately resizing this map, the robot would push around these boxes as follows:
 
 Initial state:
+
 ##############
 ##......##..##
 ##..........##
