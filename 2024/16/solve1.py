@@ -124,7 +124,7 @@ edges = [Cell(sr, sc, d0, 0)]
 
 
 def coords_checked(coord, cells):
-    coords = {(c.r, c.c) for c in cells}
+    coords = [(c.r, c.c) for c in cells]
     return coord in coords
 
 
@@ -135,14 +135,14 @@ def options(cell: Cell, cells: list[Cell]) -> list[Cell]:
     opts = []
     for dr, dc in ((0, 1), (1, 0), (0, -1), (-1, 0)):
         rr, cc = (cell.r + dr, cell.c + dc)
-        if coords_checked((rr, cc), cells):
-            continue
         if not 0 <= rr < nrow:
             continue
         if not 0 <= cc < ncol:
             continue
         obj = grid[rr][cc]
         if obj == "#":
+            continue
+        if coords_checked((rr, cc), cells):
             continue
         fn = cell.fn + 1
         if (dr, dc) != cell.direction:
