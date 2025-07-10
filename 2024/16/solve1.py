@@ -120,15 +120,11 @@ class Cell:
 
 
 cells = [Cell(sr, sc, d0, 0)]
+cell_coords = {(cells[0].r, cells[0].c)}
 edges = [Cell(sr, sc, d0, 0)]
 
 
-def coords_checked(coord, cells):
-    coords = [(c.r, c.c) for c in cells]
-    return coord in coords
-
-
-def options(cell: Cell, cells: list[Cell]) -> list[Cell]:
+def options(cell: Cell, cell_coords: set[tuple[int,int]]) -> list[Cell]:
     """
     List of valid routes at a location.
     """
@@ -142,7 +138,7 @@ def options(cell: Cell, cells: list[Cell]) -> list[Cell]:
         obj = grid[rr][cc]
         if obj == "#":
             continue
-        if coords_checked((rr, cc), cells):
+        if (rr, cc) in cell_coords:
             continue
         fn = cell.fn + 1
         if (dr, dc) != cell.direction:
@@ -159,7 +155,8 @@ while edges:
     if (cell.r == er) and (cell.c == ec):
         break
     cells.append(cell)
-    opts = options(cell, cells)
+    cell_coords.add((cell.r, cell.c))
+    opts = options(cell, cell_coords)
     if opts:
         edges += opts
         edges.sort(key=lambda x: x.astar, reverse=True)
