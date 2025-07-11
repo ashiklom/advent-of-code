@@ -1,14 +1,10 @@
 #!/usr/bin/env python
 
-def i2rc(i, ncol):
-    r = i // (ncol + 1)
-    c = i - (ncol + 1) * r
-    return r, c
+from copy import deepcopy
 
-
-# fname = "2024/16/test1"
+fname = "2024/16/test1"
 # fname = "2024/16/test2"
-fname = "2024/16/input"
+# fname = "2024/16/input"
 
 with open(fname, "r") as f:
     raw = f.read().strip()
@@ -17,6 +13,13 @@ rows = raw.split("\n")
 grid = list(map(list, rows))
 nrow = len(grid)
 ncol = len(grid[0])
+
+
+def i2rc(i, ncol):
+    r = i // (ncol + 1)
+    c = i - (ncol + 1) * r
+    return r, c
+
 
 sr, sc = i2rc(raw.find("S"), ncol)
 er, ec = i2rc(raw.find("E"), ncol)
@@ -78,8 +81,7 @@ def turns(dr: int, dc: int, going_r: int, going_c: int) -> int:
 
     raise ValueError("Can't calcluate turns")
 
-
-def gn(r: int, c: int, direction: tuple[int, int]):
+def gn(r: int, c: int, direction: tuple[int, int]) -> int:
     """
     A* heuristic for route next steps.
     """
@@ -93,13 +95,23 @@ def gn(r: int, c: int, direction: tuple[int, int]):
 
 
 class Cell:
-    def __init__(self, r, c, direction, fn) -> None:
+    def __init__(
+        self,
+        r: int,
+        c: int,
+        direction: tuple[int, int],
+        fn: int,
+        parent: "Cell|None" = None,
+    ) -> None:
         self.r = r
         self.c = c
         self.direction = direction
         self.fn = fn
         self.gn = gn(self.r, self.c, self.direction)
         self.astar = self.fn + self.gn
+        self.parent = parent
+        self.dead_end = False
+        self.fork = False
 
     def __repr__(self) -> str:
         return str(
@@ -113,12 +125,7 @@ class Cell:
         )
 
 
-cells = [Cell(sr, sc, d0, 0)]
-cell_coords = {(cells[0].r, cells[0].c)}
-edges = [Cell(sr, sc, d0, 0)]
-
-
-def options(cell: Cell, cell_coords: set[tuple[int,int]]) -> list[Cell]:
+def options(cell: Cell, cells: dict) -> list[Cell]:
     """
     List of valid routes at a location.
     """
@@ -132,28 +139,45 @@ def options(cell: Cell, cell_coords: set[tuple[int,int]]) -> list[Cell]:
         obj = grid[rr][cc]
         if obj == "#":
             continue
-        if (rr, cc) in cell_coords:
+        if (rr, cc) in cells:
             continue
         fn = cell.fn + 1
         if (dr, dc) != cell.direction:
             fn += 1000
-        new = Cell(rr, cc, (dr, dc), fn)
+        new = Cell(rr, cc, (dr, dc), fn, parent=cell)
         opts.append(new)
     return opts
 
+def draw(grid: list[list[str]], cells: dict[tuple, Cell]):
+    g = deepcopy(grid)
+    for r, c in cells.keys():
+        g[r][c] = "x"
+    result = "\n".join("".join(row) for row in g)
+    print(result)
 
-cell = None
+cell = Cell(sr, sc, d0, 0)
+cells = {(sr, sc): cell}
+edges = [cell]
 
 while edges:
     cell = edges.pop()
     if (cell.r == er) and (cell.c == ec):
         break
-    cells.append(cell)
-    cell_coords.add((cell.r, cell.c))
-    opts = options(cell, cell_coords)
+    opts = options(cell, cells)
     if opts:
         edges += opts
         edges.sort(key=lambda x: x.astar, reverse=True)
+    else:
+        cell.dead_end = True
+    cells[(cell.r, cell.c)] = cell
 
-# draw(route)
-print(cell)
+astar_target = cell.astar
+# draw(grid, cells)
+print(f"A* max value: {astar_target}")
+
+# Prune all cells with A* less than target
+cells_sub = {rc: cell for rc, cell in cells.items() if cell.astar <= astar_target}
+print(cells[(1, 1)])
+# print(len(cells))
+# print(len(cells_sub))
+draw(grid, cells_sub)
