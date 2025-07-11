@@ -178,6 +178,16 @@ while edges:
     if cell.fn >= astar_target:
         if (cell.r == er) and (cell.c == ec):
             result.update(route(cell, cells))
+            # Remove result from cells to allow other routes to be found
+            [cells.pop(k) for k in result.keys() if k in cells]
+            # NOTE: On the right track, but doesn't quite work because edges are in the wrong spot
+            # and you end up with orphaned routes.
+            # Need to first do this, then reconstruct the route of all orphaned cells (defined as cells that can't reach the start),
+            # then determine which cells are still edges.
+            # 
+            # Or maybe: Frame the problem as a decision tree for each cell marked as a fork. From the start, if I hit a fork,
+            # explore every option in full (in isolation, with its own list of existing cells), until I hit a true dead end (wall) or a
+            # virtual dead end (fn > astar_target). Similar to my original exhaustive solution, but more constrained.
         continue
     opts = options(cell, cells)
     if opts:
