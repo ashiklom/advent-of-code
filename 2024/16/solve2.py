@@ -3,8 +3,12 @@
 from copy import deepcopy
 
 fname = "2024/16/test1"
+astar_target = 7036
+
 # fname = "2024/16/test2"
+
 # fname = "2024/16/input"
+# astar_target = 66404
 
 with open(fname, "r") as f:
     raw = f.read().strip()
@@ -110,8 +114,6 @@ class Cell:
         self.gn = gn(self.r, self.c, self.direction)
         self.astar = self.fn + self.gn
         self.parent = parent
-        self.dead_end = False
-        self.fork = False
 
     def __repr__(self) -> str:
         return str(
@@ -155,29 +157,34 @@ def draw(grid: list[list[str]], cells: dict[tuple, Cell]):
     result = "\n".join("".join(row) for row in g)
     print(result)
 
+def route(cell: Cell, cells: dict[tuple[int, int], Cell]) -> dict[tuple[int,int], Cell]:
+    parent = cell.parent
+    result = {(cell.r, cell.c): cell}
+    while parent:
+        cell = cells[(parent.r, parent.c)]
+        result[(cell.r, cell.c)] = cell
+        parent = cell.parent
+    return result
+        
+
 cell = Cell(sr, sc, d0, 0)
 cells = {(sr, sc): cell}
 edges = [cell]
 
+result = {(sr, sc): cell}
+
 while edges:
     cell = edges.pop()
     if (cell.r == er) and (cell.c == ec):
-        break
+        # Reached the end
+        if cell.astar == astar_target:
+            result |= route(cell, cells)
+            # result.update(route(cell, cells))
+        continue
     opts = options(cell, cells)
     if opts:
         edges += opts
         edges.sort(key=lambda x: x.astar, reverse=True)
-    else:
-        cell.dead_end = True
     cells[(cell.r, cell.c)] = cell
 
-astar_target = cell.astar
-# draw(grid, cells)
-print(f"A* max value: {astar_target}")
-
-# Prune all cells with A* less than target
-cells_sub = {rc: cell for rc, cell in cells.items() if cell.astar <= astar_target}
-print(cells[(1, 1)])
-# print(len(cells))
-# print(len(cells_sub))
-draw(grid, cells_sub)
+draw(grid, result)
