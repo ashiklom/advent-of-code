@@ -175,11 +175,9 @@ result = {(sr, sc): cell}
 
 while edges:
     cell = edges.pop()
-    if (cell.r == er) and (cell.c == ec):
-        # Reached the end
-        if cell.astar == astar_target:
-            result |= route(cell, cells)
-            # result.update(route(cell, cells))
+    if cell.fn >= astar_target:
+        if (cell.r == er) and (cell.c == ec):
+            result.update(route(cell, cells))
         continue
     opts = options(cell, cells)
     if opts:
@@ -187,4 +185,5 @@ while edges:
         edges.sort(key=lambda x: x.astar, reverse=True)
     cells[(cell.r, cell.c)] = cell
 
+draw(grid, cells)
 draw(grid, result)
