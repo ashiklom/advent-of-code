@@ -1,5 +1,3 @@
-from copy import deepcopy
-
 with open("2024/06/input") as f:
     grid = [list(s.strip()) for s in f.readlines()]
 
@@ -77,12 +75,13 @@ step = 0
 while True:
     if step > 0:
         # See if adding an obstacle at nxt creates a loop
-        newgrid = deepcopy(grid)
-        newgrid[rc[0]][rc[1]] = "#"
-        if is_loop(newgrid, guard0, rc0):
+        orig = grid[rc[0]][rc[1]]
+        grid[rc[0]][rc[1]] = "#"
+        if is_loop(grid, guard0, rc0):
             loops.add(rc)
+        grid[rc[0]][rc[1]] = orig
     step += 1
-    if step % 100 == 0:
+    if step % 1000 == 0:
         print(f"step {step}")
         print(f"current loops: {len(loops)}")
     nxt = go(guard, rc)
@@ -97,12 +96,3 @@ while True:
         rc = nxt
 
 print(len(loops))
-
-# Part 2
-# At each X position of the solved grid (except
-# starting), try placing an object.
-# Then, run a simulation and see if it causes a loop.
-# Loop detection: If you pass the same location in the 
-# same direction, you're in a loop.
-# So just replace X with guard as the state marker, 
-# and exit if the next guard matches the saved state.
