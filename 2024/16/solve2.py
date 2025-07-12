@@ -2,13 +2,14 @@
 
 from copy import deepcopy
 
-fname = "2024/16/test1"
-astar_target = 7036
+# fname = "2024/16/test1"
+# astar_target = 7036
 
-# fname = "2024/16/test2"
+fname = "2024/16/test2"
+astar_target = 11048
 
 # fname = "2024/16/input"
-# astar_target = 66404
+# astar_target = 66_404
 
 with open(fname, "r") as f:
     raw = f.read().strip()
@@ -85,6 +86,7 @@ def turns(dr: int, dc: int, going_r: int, going_c: int) -> int:
 
     raise ValueError("Can't calcluate turns")
 
+
 def gn(r: int, c: int, direction: tuple[int, int]) -> int:
     """
     A* heuristic for route next steps.
@@ -100,12 +102,7 @@ def gn(r: int, c: int, direction: tuple[int, int]) -> int:
 
 class Cell:
     def __init__(
-        self,
-        r: int,
-        c: int,
-        direction: tuple[int, int],
-        fn: int,
-        parent: "Cell|None" = None,
+        self, r: int, c: int, direction: tuple[int, int], fn: int, route: set = set()
     ) -> None:
         self.r = r
         self.c = c
@@ -113,7 +110,8 @@ class Cell:
         self.fn = fn
         self.gn = gn(self.r, self.c, self.direction)
         self.astar = self.fn + self.gn
-        self.parent = parent
+        self.route = {(r, c)}
+        self.route.update(route)
 
     def __repr__(self) -> str:
         return str(
@@ -127,7 +125,7 @@ class Cell:
         )
 
 
-def options(cell: Cell, cells: dict) -> list[Cell]:
+def options(cell: Cell) -> list[Cell]:
     """
     List of valid routes at a location.
     """
@@ -141,59 +139,52 @@ def options(cell: Cell, cells: dict) -> list[Cell]:
         obj = grid[rr][cc]
         if obj == "#":
             continue
-        if (rr, cc) in cells:
+        if (rr, cc) in cell.route:
             continue
         fn = cell.fn + 1
         if (dr, dc) != cell.direction:
             fn += 1000
-        new = Cell(rr, cc, (dr, dc), fn, parent=cell)
+        if fn > astar_target:
+            continue
+        new = Cell(rr, cc, (dr, dc), fn, route=cell.route)
         opts.append(new)
     return opts
 
-def draw(grid: list[list[str]], cells: dict[tuple, Cell]):
+
+def draw(grid: list[list[str]], cells: set[tuple[int, int]]):
     g = deepcopy(grid)
-    for r, c in cells.keys():
+    for r, c in cells:
         g[r][c] = "x"
     result = "\n".join("".join(row) for row in g)
     print(result)
 
-def route(cell: Cell, cells: dict[tuple[int, int], Cell]) -> dict[tuple[int,int], Cell]:
-    parent = cell.parent
-    result = {(cell.r, cell.c): cell}
-    while parent:
-        cell = cells[(parent.r, parent.c)]
-        result[(cell.r, cell.c)] = cell
-        parent = cell.parent
-    return result
-        
 
 cell = Cell(sr, sc, d0, 0)
 cells = {(sr, sc): cell}
 edges = [cell]
 
-result = {(sr, sc): cell}
+result = set()
 
+i = 0
+gt_astar = 0
+ends = 0
 while edges:
+    i += 1
+    if i % 100_000 == 0:
+        print(f"step {i}; {len(edges)} edges; {gt_astar} > astar")
+    # if i > 40_000:
+    #     raise ValueError
     cell = edges.pop()
     if cell.fn >= astar_target:
+        gt_astar += 1
         if (cell.r == er) and (cell.c == ec):
-            result.update(route(cell, cells))
-            # Remove result from cells to allow other routes to be found
-            [cells.pop(k) for k in result.keys() if k in cells]
-            # NOTE: On the right track, but doesn't quite work because edges are in the wrong spot
-            # and you end up with orphaned routes.
-            # Need to first do this, then reconstruct the route of all orphaned cells (defined as cells that can't reach the start),
-            # then determine which cells are still edges.
-            # 
-            # Or maybe: Frame the problem as a decision tree for each cell marked as a fork. From the start, if I hit a fork,
-            # explore every option in full (in isolation, with its own list of existing cells), until I hit a true dead end (wall) or a
-            # virtual dead end (fn > astar_target). Similar to my original exhaustive solution, but more constrained.
+            result.update(cell.route)
+            ends += 1
         continue
-    opts = options(cell, cells)
+    opts = options(cell)
     if opts:
         edges += opts
-        edges.sort(key=lambda x: x.astar, reverse=True)
     cells[(cell.r, cell.c)] = cell
 
-draw(grid, cells)
-draw(grid, result)
+# draw(grid, result)
+print(len(result))
