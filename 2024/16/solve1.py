@@ -41,7 +41,7 @@ def turns(dr: int, dc: int, going_r: int, going_c: int) -> int:
         # Same row
         if going_r == 0:
             # Moving horizontally
-            if going_r == target_r:
+            if going_c == target_c:
                 # Same direction; no turns
                 return 0
             # Opposite direction; 3 turns to turn around
@@ -55,7 +55,7 @@ def turns(dr: int, dc: int, going_r: int, going_c: int) -> int:
     elif dc == 0:
         # Same logic, but for same column
         if going_c == 0:
-            if going_c == target_c:
+            if going_r == target_r:
                 return 0
             else:
                 return 3
