@@ -135,6 +135,7 @@ while True:
         cell.get_options()
     if not cell.opts:
         # Dead end; double back
+        cell.is_fork = False
         try:
             cell = cell.find_last_fork(cells)
         except IndexError:
