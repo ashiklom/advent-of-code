@@ -21,7 +21,6 @@ grid = list(map(list, rows))
 nrow = len(grid)
 ncol = len(grid[0])
 
-
 def i2rc(i, ncol):
     r = i // (ncol + 1)
     c = i - (ncol + 1) * r
@@ -31,10 +30,11 @@ sr, sc = i2rc(raw.find("S"), ncol)
 er, ec = i2rc(raw.find("E"), ncol)
 d0 = (0, 1)
 
+type coord = tuple[int, int]
 
 class Cell:
     def __init__(
-        self, r: int, c: int, direction: tuple[int, int], fn: int, route: list = []
+        self, r: int, c: int, direction: coord, fn: int, route: list = []
     ) -> None:
         self.r = r
         self.c = c
@@ -42,11 +42,15 @@ class Cell:
         self.fn = fn
         self.route = route + [(self.r, self.c)]
         self.opts = []
+        self.checked_opts = False
+        self.is_fork = False
 
     def get_options(self) -> None:
         """
         List of valid routes at a location.
         """
+        nopts = 0
+        self.checked_opts = True
         for dr, dc in ((0, 1), (1, 0), (0, -1), (-1, 0)):
             rr, cc = (self.r + dr, self.c + dc)
             if not 0 <= rr < nrow:
@@ -56,15 +60,30 @@ class Cell:
             obj = grid[rr][cc]
             if obj == "#":
                 continue
-            if (rr, cc) in self.route:
-                continue
             if (rr, cc) in dead_ends:
+                continue
+            # All of the reasons above this are valid reasons for calling something a dead end.
+            # The reasons below are not.
+            if (rr, cc) in self.route:
                 continue
             fn = cell.fn + 1
             if (dr, dc) != self.direction:
                 fn += 1000
+            if fn > astar_target:
+                continue
             new = Cell(rr, cc, (dr, dc), fn, route=cell.route)
             self.opts.append(new)
+            nopts += 1
+        if nopts > 1:
+            self.is_fork = True
+
+    def find_last_fork(self, cells: dict[coord, "Cell"]) -> "Cell":
+        i = -2
+        c = cells[self.route[i]]
+        while not c.is_fork:
+            i -= 1
+            c = cells[self.route[i]]
+        return c
 
     def __repr__(self) -> str:
         return str(
@@ -76,7 +95,7 @@ class Cell:
         )
 
 
-def draw(grid: list[list[str]], cells: set[tuple[int, int]]):
+def draw(grid: list[list[str]], cells: set[coord]):
     g = deepcopy(grid)
     for r, c in cells:
         g[r][c] = "x"
@@ -95,30 +114,53 @@ dead_ends = set()
 result = set()
 
 i = 0
-while edges:
+while True:
     i += 1
-    if i % 10_000 == 0:
-        print(i)
-    cell = edges.pop()
-    if (cell.r == er) and (cell.c == ec):
-        if cell.fn <= astar_target:
-            result.update(cell.route)
+    if i % 500_000 == 0:
+        draw(grid, set(cells.keys()))
+    if not cell.checked_opts:
+        cell.get_options()
+    if not cell.opts:
+        # Dead end; double back
+        try:
+            cell = cell.find_last_fork(cells)
+        except IndexError:
+            # We've explored the entire maze, so we're done
+            break
         continue
-    cell.get_options()
-    if cell.opts:
-        edges += cell.opts
-    else:
-        rr = cell.r + cell.direction[0]
-        cc = cell.c + cell.direction[1]
-        if grid[rr][cc] == "#":
-            # True dead end.
-            # Add it and all children that aren't forks to the list of dead ends so they aren't searched again.
-            dead_cell = cell
-            while len(dead_cell.route) >= 2 and len(dead_cell.opts) <= 1:
-                dead_ends.add((dead_cell.r, dead_cell.c))
-                nxt = dead_cell.route[-2]
-                dead_cell = cells[nxt]
+    cell = cell.opts.pop()
     cells[(cell.r, cell.c)] = cell
+    if (cell.r == er) and (cell.c == ec):
+        result.update(set(cell.route))
+        cell = cell.find_last_fork(cells)
+
+draw(grid, result)
+
+# i = 0
+# while edges:
+#     i += 1
+#     if i % 10_000 == 0:
+#         print(i)
+#     cell = edges.pop()
+#     if (cell.r == er) and (cell.c == ec):
+#         if cell.fn <= astar_target:
+#             result.update(cell.route)
+#         continue
+#     cell.get_options()
+#     if cell.opts:
+#         edges += cell.opts
+#     else:
+#         rr = cell.r + cell.direction[0]
+#         cc = cell.c + cell.direction[1]
+#         if grid[rr][cc] == "#":
+#             # True dead end.
+#             # Add it and all children that aren't forks to the list of dead ends so they aren't searched again.
+#             dead_cell = cell
+#             while len(dead_cell.route) >= 2 and len(dead_cell.opts) <= 1:
+#                 dead_ends.add((dead_cell.r, dead_cell.c))
+#                 nxt = dead_cell.route[-2]
+#                 dead_cell = cells[nxt]
+#     cells[(cell.r, cell.c)] = cell
 
 # draw(grid, result)
 # draw(grid, dead_ends)
