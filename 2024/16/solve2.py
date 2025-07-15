@@ -58,9 +58,12 @@ class Cell:
             if obj == "#":
                 ndead += 1
                 continue
-            if (rr, cc) == self.direction:
-                ndead += 1
-                continue
+            try:
+                if (rr, cc) == self.route[-2]:
+                    ndead += 1
+                    continue
+            except IndexError:
+                pass
             if (rr, cc) in dead_ends:
                 ndead += 1
                 continue
@@ -108,10 +111,12 @@ class Cell:
         )
 
 
-def draw(grid: list[list[str]], cells: set[coord]):
+def draw(grid: list[list[str]], cells: set[coord], alt: set[coord] = set()):
     g = deepcopy(grid)
     for r, c in cells:
         g[r][c] = "x"
+    for r, c in alt:
+        g[r][c] = "O"
     g[sr][sc] = "S"
     g[er][ec] = "E"
     result = "\n".join("".join(row) for row in g)
@@ -130,7 +135,8 @@ i = 0
 while True:
     i += 1
     if i % 500_000 == 0:
-        draw(grid, set(cells.keys()))
+        # print(dead_ends)
+        draw(grid, set(cells.keys()), dead_ends)
     if not cell.checked_opts:
         cell.get_options()
     if not cell.opts:
