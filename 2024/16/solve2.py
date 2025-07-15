@@ -6,12 +6,12 @@ from copy import deepcopy
 # astar_target = 7036
 # answer = 45
 
-fname = "2024/16/test2"
-astar_target = 11048
-answer = 64
+# fname = "2024/16/test2"
+# astar_target = 11048
+# answer = 64
 
-# fname = "2024/16/input"
-# astar_target = 66_404
+fname = "2024/16/input"
+astar_target = 66_404
 
 with open(fname, "r") as f:
     raw = f.read().strip()
@@ -51,16 +51,18 @@ class Cell:
         """
         nopts = 0
         self.checked_opts = True
+        ndead = 0
         for dr, dc in ((0, 1), (1, 0), (0, -1), (-1, 0)):
             rr, cc = (self.r + dr, self.c + dc)
-            if not 0 <= rr < nrow:
-                continue
-            if not 0 <= cc < ncol:
-                continue
             obj = grid[rr][cc]
             if obj == "#":
+                ndead += 1
+                continue
+            if (rr, cc) == self.direction:
+                ndead += 1
                 continue
             if (rr, cc) in dead_ends:
+                ndead += 1
                 continue
             # All of the reasons above this are valid reasons for calling something a dead end.
             # The reasons below are not.
@@ -76,6 +78,17 @@ class Cell:
             nopts += 1
         if nopts > 1:
             self.is_fork = True
+        if ndead == 4:
+            # Complete dead end. Mark self and route back to last fork as dead end.
+            dead_ends.add((self.r, self.c))
+            i = -2
+            c = cells[self.route[i]]
+            while not c.is_fork:
+                i -= 1 
+                try:
+                    c = cells[self.route[i]]
+                except IndexError:
+                    break
 
     def find_last_fork(self, cells: dict[coord, "Cell"]) -> "Cell":
         i = -2
