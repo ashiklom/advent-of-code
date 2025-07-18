@@ -6,12 +6,12 @@ from copy import deepcopy
 # astar_target = 7036
 # answer = 45
 
-# fname = "2024/16/test2"
-# astar_target = 11048
-# answer = 64
+fname = "2024/16/test2"
+astar_target = 11048
+answer = 64
 
-fname = "2024/16/input"
-astar_target = 66_404
+# fname = "2024/16/input"
+# astar_target = 66_404
 
 with open(fname, "r") as f:
     raw = f.read().strip()
@@ -30,7 +30,89 @@ sr, sc = i2rc(raw.find("S"), ncol)
 er, ec = i2rc(raw.find("E"), ncol)
 d0 = (0, 1)
 
+# Find every fork
+forks = set()
+for r, row in enumerate(grid):
+    for c, x in enumerate(row):
+        if x == "#":
+            continue
+        n = 0
+        n += grid[r-1][c] != "#"
+        n += grid[r+1][c] != "#"
+        n += grid[r][c-1] != "#"
+        n += grid[r][c+1] != "#"
+        if n >= 3:
+            forks.add((r, c))
+
 type coord = tuple[int, int]
+
+def turns(dr: int, dc: int, going_r: int, going_c: int) -> int:
+    """
+    Minimum number of turns needed given a distance and a heading.
+    """
+    if dr == 0:
+        target_r = 0
+    else:
+        target_r = int(dr / abs(dr))
+
+    if dc == 0:
+        target_c = 0
+    else:
+        target_c = int(dc / abs(dc))
+
+    if dr == 0:
+        # Same row
+        if going_r == 0:
+            # Moving horizontally
+            if going_c == target_c:
+                # Same direction; no turns
+                return 0
+            # Opposite direction; 3 turns to turn around
+            else:
+                return 3
+        # Moving vertically
+        else:
+            # Going vertical. Need to go horizontal. Only need 1 turn.
+            return 1
+
+    elif dc == 0:
+        # Same logic, but for same column
+        if going_c == 0:
+            if going_r == target_r:
+                return 0
+            else:
+                return 3
+        else:
+            return 1
+
+    # Different row and column
+    # 1 turn if heading in the right direction; 2 turns if in the wrong direction
+    else:
+        if going_r == 0:
+            if going_c == target_c:
+                return 1
+            else:
+                return 2
+        if going_c == 0:
+            if going_r == target_r:
+                return 1
+            else:
+                return 2
+
+    raise ValueError("Can't calcluate turns")
+
+
+def gn(r: int, c: int, direction: tuple[int, int], er: int, ec: int):
+    """
+    A* heuristic for route next steps.
+    """
+    # Taxicab distance
+    dr = er - r
+    dc = ec - c
+    if dr == 0 and dc == 0:
+        # At destination. gn = 0
+        return 0
+    return abs(dr) + abs(dc) + turns(dr, dc, direction[0], direction[1]) * 1000
 
 class Cell:
     def __init__(
@@ -40,66 +122,37 @@ class Cell:
         self.c = c
         self.direction = direction
         self.fn = fn
+        self.astar = 0
         self.route = route + [(self.r, self.c)]
         self.opts = []
-        self.checked_opts = False
-        self.is_fork = False
 
-    def get_options(self) -> None:
+    def get_options(self, cells: dict[coord, "Cell"], end: coord) -> None:
         """
         List of valid routes at a location.
         """
-        nopts = 0
-        self.checked_opts = True
-        ndead = 0
         for dr, dc in ((0, 1), (1, 0), (0, -1), (-1, 0)):
             rr, cc = (self.r + dr, self.c + dc)
             obj = grid[rr][cc]
             if obj == "#":
-                ndead += 1
                 continue
             try:
                 if (rr, cc) == self.route[-2]:
-                    ndead += 1
                     continue
             except IndexError:
                 pass
-            if (rr, cc) in dead_ends:
-                ndead += 1
+            if (rr, cc) in cells:
                 continue
-            # All of the reasons above this are valid reasons for calling something a dead end.
-            # The reasons below are not.
-            if (rr, cc) in self.route:
-                continue
-            fn = cell.fn + 1
+            fn = self.fn + 1
             if (dr, dc) != self.direction:
                 fn += 1000
             if fn > astar_target:
                 continue
-            new = Cell(rr, cc, (dr, dc), fn, route=cell.route)
+            astar = fn + gn(rr, cc, (dr, dc), end[0], end[1])
+            if astar > astar_target:
+                continue
+            new = Cell(rr, cc, (dr, dc), fn, route=self.route)
+            new.astar = astar
             self.opts.append(new)
-            nopts += 1
-        if nopts > 1:
-            self.is_fork = True
-        if ndead == 4:
-            # Complete dead end. Mark self and route back to last fork as dead end.
-            dead_ends.add((self.r, self.c))
-            i = -2
-            c = cells[self.route[i]]
-            while not c.is_fork:
-                i -= 1 
-                try:
-                    c = cells[self.route[i]]
-                except IndexError:
-                    break
-
-    def find_last_fork(self, cells: dict[coord, "Cell"]) -> "Cell":
-        i = -2
-        c = cells[self.route[i]]
-        while not c.is_fork:
-            i -= 1
-            c = cells[self.route[i]]
-        return c
 
     def __repr__(self) -> str:
         return str(
@@ -110,6 +163,31 @@ class Cell:
             }
         )
 
+def solve(start: coord, end: coord, d0: coord, fn: int = 0):
+    cell = Cell(start[0], start[1], d0, fn)
+    cells = {start: cell}
+    edges = [cell]
+    while edges:
+        cell = edges.pop()
+        if ((cell.r == end[0]) and (cell.c == end[1])):
+            return cell
+        cell.get_options(cells, end)
+        if cell.opts:
+            edges += cell.opts
+            edges.sort(key=lambda x: x.astar, reverse=True)
+    return None
+
+result = set()
+
+def solve_fork(fork: coord):
+    to_end = solve(fork, (er, ec), (0, 1))
+    if not to_end:
+        return None
+    to_start = solve(fork, (sr, sc), (0, 1), fn=to_end.fn)
+    if not to_start:
+        return None
+    result.update(set(to_end.route))
+    result.update(set(to_start.route))
 
 def draw(grid: list[list[str]], cells: set[coord], alt: set[coord] = set()):
     g = deepcopy(grid)
@@ -122,67 +200,11 @@ def draw(grid: list[list[str]], cells: set[coord], alt: set[coord] = set()):
     result = "\n".join("".join(row) for row in g)
     print(result)
 
-
-cell = Cell(sr, sc, d0, 0)
-cells = {(sr, sc): cell}
-edges = [cell]
-
-dead_ends = set()
-
-result = set()
-
-i = 0
-while True:
-    i += 1
-    if i % 500_000 == 0:
-        # print(dead_ends)
-        draw(grid, set(cells.keys()), dead_ends)
-    if not cell.checked_opts:
-        cell.get_options()
-    if not cell.opts:
-        # Dead end; double back
-        cell.is_fork = False
-        try:
-            cell = cell.find_last_fork(cells)
-        except IndexError:
-            # We've explored the entire maze, so we're done
-            break
-        continue
-    cell = cell.opts.pop()
-    cells[(cell.r, cell.c)] = cell
-    if (cell.r == er) and (cell.c == ec):
-        result.update(set(cell.route))
-        cell = cell.find_last_fork(cells)
+for fork in forks:
+    print(fork)
+    solve_fork(fork)
 
 draw(grid, result)
-
-# i = 0
-# while edges:
-#     i += 1
-#     if i % 10_000 == 0:
-#         print(i)
-#     cell = edges.pop()
-#     if (cell.r == er) and (cell.c == ec):
-#         if cell.fn <= astar_target:
-#             result.update(cell.route)
-#         continue
-#     cell.get_options()
-#     if cell.opts:
-#         edges += cell.opts
-#     else:
-#         rr = cell.r + cell.direction[0]
-#         cc = cell.c + cell.direction[1]
-#         if grid[rr][cc] == "#":
-#             # True dead end.
-#             # Add it and all children that aren't forks to the list of dead ends so they aren't searched again.
-#             dead_cell = cell
-#             while len(dead_cell.route) >= 2 and len(dead_cell.opts) <= 1:
-#                 dead_ends.add((dead_cell.r, dead_cell.c))
-#                 nxt = dead_cell.route[-2]
-#                 dead_cell = cells[nxt]
-#     cells[(cell.r, cell.c)] = cell
-
-# draw(grid, result)
 # draw(grid, dead_ends)
 # print(len(dead_ends))
 print(len(result))
