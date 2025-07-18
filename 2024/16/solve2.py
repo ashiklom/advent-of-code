@@ -6,12 +6,12 @@ from copy import deepcopy
 # astar_target = 7036
 # answer = 45
 
-fname = "2024/16/test2"
-astar_target = 11048
-answer = 64
+# fname = "2024/16/test2"
+# astar_target = 11048
+# answer = 64
 
-# fname = "2024/16/input"
-# astar_target = 66_404
+fname = "2024/16/input"
+astar_target = 66_404
 
 with open(fname, "r") as f:
     raw = f.read().strip()
@@ -175,7 +175,10 @@ def solve(start: coord, end: coord, d0: coord, fn: int = 0):
         if cell.opts:
             edges += cell.opts
             edges.sort(key=lambda x: x.astar, reverse=True)
+        cells[(cell.r, cell.c)] = cell
     return None
+
+test = solve((sr, sc), (er, ec), (0, 1))
 
 result = set()
 
@@ -200,8 +203,9 @@ def draw(grid: list[list[str]], cells: set[coord], alt: set[coord] = set()):
     result = "\n".join("".join(row) for row in g)
     print(result)
 
-for fork in forks:
-    print(fork)
+for i, fork in enumerate(forks):
+    if i % 100 == 0:
+        print(f"{i} / {len(forks)}")
     solve_fork(fork)
 
 draw(grid, result)
