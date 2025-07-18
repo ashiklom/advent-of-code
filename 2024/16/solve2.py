@@ -2,10 +2,11 @@
 
 from copy import deepcopy
 
+from helpers import turns, i2rc
+
 # fname = "2024/16/test1"
 # astar_target = 7036
 # answer = 45
-from helpers import turns, i2rc
 
 # fname = "2024/16/test2"
 # astar_target = 11048
@@ -100,7 +101,8 @@ class Cell:
             {
                 "rc": (self.r, self.c),
                 "dir": self.direction,
-                "fn": self.fn
+                "fn": self.fn,
+                "astar": self.astar
             }
         )
 
@@ -124,35 +126,37 @@ def draw(grid: list[list[str]], cells: set[coord], alt: set[coord] = set()):
     print(result)
 
 
-def solve(start: coord, end: coord, d0: coord, fn: int = 0):
-    cell = Cell(start[0], start[1], d0, fn)
-    cells = {start: cell}
-    edges = [cell]
+def solve(start: Cell, end: coord):
+    cells = {start.coord: start}
+    edges = [start]
     while edges:
         cell = edges.pop()
-        if ((cell.r == end[0]) and (cell.c == end[1])):
+        if cell.coord == end:
             return cell
         cell.get_options(cells, end)
         if cell.opts:
             edges += cell.opts
             edges.sort(key=lambda x: x.astar, reverse=True)
+        cells[cell.coord] = cell
+    return None
 
-test = solve((sr, sc), (er, ec), (0, 1))
+start = Cell(sr, sc, (0, 1), 0)
+test = solve(start, (er, ec))
+print(test)
+test2 = solve(start, (67, 59))
+print(test2)
 
 result = set()
 
 def solve_fork(fork: coord):
-    solve_end = solve(fork, (er, ec), (0, 1))
-    if not solve_end:
+    start = Cell(sr, sc, (0, 1), 0)
+    to_fork = solve(start, fork)
+    if not to_fork:
         return None
-    init, to_end = solve_end
-    # Start going in the exact opposite direction of where the end solution started
-    d0 = (-init.direction[0], -init.direction[1])
-    solve_start = solve(fork, (sr, sc), d0, fn=to_end.fn)
-    if not solve_start:
+    to_end = solve(to_fork, (er, ec))
+    if not to_end:
         return None
-    result.update(set(to_end.route))
-    result.update(set(solve_start[1].route))
+    result.update(set(reconstruct_route(to_end)))
 
 
 for i, fork in enumerate(forks):
@@ -160,7 +164,5 @@ for i, fork in enumerate(forks):
         print(f"{i} / {len(forks)}")
     solve_fork(fork)
 
-draw(grid, result)
-# draw(grid, dead_ends)
-# print(len(dead_ends))
+# draw(grid, result)
 print(len(result))
