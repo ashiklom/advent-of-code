@@ -170,7 +170,8 @@ def solve(start: coord, end: coord, d0: coord, fn: int = 0):
     while edges:
         cell = edges.pop()
         if ((cell.r == end[0]) and (cell.c == end[1])):
-            return cell
+            start_cell = cells[cell.route[0]]
+            return (start_cell, cell)
         cell.get_options(cells, end)
         if cell.opts:
             edges += cell.opts
@@ -183,14 +184,17 @@ test = solve((sr, sc), (er, ec), (0, 1))
 result = set()
 
 def solve_fork(fork: coord):
-    to_end = solve(fork, (er, ec), (0, 1))
-    if not to_end:
+    solve_end = solve(fork, (er, ec), (0, 1))
+    if not solve_end:
         return None
-    to_start = solve(fork, (sr, sc), (0, 1), fn=to_end.fn)
-    if not to_start:
+    init, to_end = solve_end
+    # Start going in the exact opposite direction of where the end solution started
+    d0 = (-init.direction[0], -init.direction[1])
+    solve_start = solve(fork, (sr, sc), d0, fn=to_end.fn)
+    if not solve_start:
         return None
     result.update(set(to_end.route))
-    result.update(set(to_start.route))
+    result.update(set(solve_start[1].route))
 
 def draw(grid: list[list[str]], cells: set[coord], alt: set[coord] = set()):
     g = deepcopy(grid)
