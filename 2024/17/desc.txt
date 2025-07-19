@@ -1,6 +1,7 @@
 # vim: set wrap linebreak :
-Day 17 - Advent of Code 2024
+
 --- Day 17: Chronospatial Computer ---
+
 The Historians push the button on their strange device, but this time, you all just feel like you're falling.
 
 "Situation critical", the device announces in a familiar voice. "Bootstrapping process failed. Initializing debugger...."
@@ -22,6 +23,7 @@ Combo operand 4 represents the value of register A.
 Combo operand 5 represents the value of register B.
 Combo operand 6 represents the value of register C.
 Combo operand 7 is reserved and will not appear in valid programs.
+
 The eight instructions are as follows:
 
 The adv instruction (opcode 0) performs division. The numerator is the value in the A register. The denominator is found by raising 2 to the power of the instruction's combo operand. (So, an operand of 2 would divide A by 4 (2^2); an operand of 5 would divide A by 2^B.) The result of the division operation is truncated to an integer and then written to the A register.
