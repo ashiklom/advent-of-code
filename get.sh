@@ -14,7 +14,7 @@ for year in {2020..2024}; do
     echo "Retrieving $ddir"
     mkdir -p $ddir
     if [[ ! -f "$ddir/desc.txt" ]]; then
-      if html2text -v &> /dev/null; then
+      if html2text --version &> /dev/null; then
         curl -s https://adventofcode.com/$year/day/$day | html2text > "$ddir/desc.txt"
       else
         echo "html2text not available. Falling back to HTML"
