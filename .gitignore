@@ -1,3 +1,9 @@
+# Don't share inputs or descriptions
+**/desc.txt
+**/desc.html
+**/input
+/token
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
