@@ -1,119 +1,69 @@
 #!/usr/bin/env python
 
-from typing import Callable
-
-
-class Program:
-    def __init__(self, A: int, B: int, C: int, program: list[int]) -> None:
-        self.A = A
-        self.B = B
-        self.C = C
-        self.program = program
-        self.n_program = len(self.program)
-        self.instruction_ptr = 0
-        self.output = []
-
-        pass
-
-    def combo(self, op: int) -> int:
-        if op <= 3:
-            return op
-        if op == 4:
-            return self.A
-        if op == 5:
-            return self.B
-        if op == 6:
-            return self.C
-        raise ValueError(f"Invalid op {op}")
-
-    def run_instruction(self) -> None:
-        opcode = self.program[self.instruction_ptr]
-        op = self.program[self.instruction_ptr + 1]
-        self.instruction(opcode, op)
-
-    def execute(self) -> None:
-        while self.instruction_ptr < self.n_program:
-            self.run_instruction()
-
-    def instruction(self, opcode: int, op: int) -> None:
-        fnlist = {
-            0: self.adv,
-            1: self.bxl,
-            2: self.bst,
-            3: self.jnz,
-            4: self.bxc,
-            5: self.out,
-            6: self.bdv,
-            7: self.cdv,
-        }
-        fnlist[opcode](op)
-
-    # Opcode 0
-    def adv(self, op: int) -> None:
-        self.A = int(self.A / (2 ** self.combo(op)))
-        self.instruction_ptr += 2
-
-    # Opcode 1
-    def bxl(self, op: int):
-        self.B = self.B ^ op
-        self.instruction_ptr += 2
-
-    # Opcode 2
-    # Does not affect the output 
-    # (because I only write the last 3 bits anyway)
-    def bst(self, op: int) -> None:
-        self.B = self.combo(op) % 8
-        self.instruction_ptr += 2
-
-    # Opcode 3
-    def jnz(self, op: int) -> None:
-        if self.A == 0:
-            self.instruction_ptr += 2
-            return
-        self.instruction_ptr = op
-
-    # Opcode 4
-    # Only opcode that affects the output
-    def bxc(self, _) -> None:
-        self.B = self.B ^ self.C
-        self.instruction_ptr += 2
-
-    # Opcode 5
-    def out(self, op: int) -> None:
-        self.output.append(self.combo(op) % 8)
-        self.instruction_ptr += 2
-
-    # Opcode 6
-    # This can be ignored -- never appears in the program
-    def bdv(self, op: int) -> None:
-        self.B = int(self.A / (2 ** self.combo(op)))
-        self.instruction_ptr += 2
-
-    # Opcode 7
-    # Values of C and A should be the same every loop.
-    def cdv(self, op: int) -> None:
-        self.C = int(self.A / (2 ** self.combo(op)))
-        self.instruction_ptr += 2
-
-
-def test(A: int, B: int, C: int, program: list[int], check: Callable):
-    t = Program(A, B, C, program)
-    t.execute()
-    if not check(t):
-        raise ValueError("Failed test")
-
+from math import log2
 
 # Do the puzzle
 with open("2024/17/input", "r") as f:
     raw = f.read().splitlines()
 
-A = int(raw[0].split(":")[1])
-B = int(raw[1].split(":")[1])
-C = int(raw[2].split(":")[1])
 program = list(map(int, raw[4].split(":")[1].split(",")))
 
-# Prog: [2,4, 1,1, 7,5, 4,6, 1,4 ,0,3, 5,5, 3,0]
+def prog(A):
+    # 2,4 -- B = combo % 8
+    B = A % 8
+    # 1,1 -- B = B ^ op
+    B = B ^ 1
+    # 7,5 -- C = int(A / 2**combo)
+    C = int(A / (2**B))
+    # 4,6 -- B = B ^ C
+    B = B ^ C
+    # 1,4 -- B ^ op
+    B = B ^ 4
+    # 0,3
+    A = int(A / 8)
+    # 5,5
+    print(B % 8)
+    # 3,0 -- reset
+    return A
+
+A = 59397658
+n = int(log2(A) / 3) + 1
+for _ in range(n):
+    A = prog(A)
+
+for i in range(30):
+    # print(f"{i}, {prog(i)}")
+    a, b = prog(i)
+    print(f"{i}, {bin(i)} => {bin(a), bin(b)}")
+
+# Prog: [2,4, 1,1, 7,5, 4,6, 1,4, | 0,3, 5,5, 3,0]
 # Out: 4,6,1,4,2,1,3,1,6
+
+# Sequence
+# A = x*_yyy
+# 4 ^ 1 ^ x* = 0*_yyy ^ x*_yyy
+# 4 ^ 1 ^ x* = x*_000
+# 4 ^ 1 = x*_000 ^ 000_x*
+# 4 ^ 1 = 000_?+_000
+# 4 ^ 1 ^ xxx_xxx = 000_000_000
+# 4 ^ 1 = 000_000_000 ^ 000_xxx_xxx
+
+# 4 ^ 1 ^ (A/8) = (A % 8) ^ A
+# X = 0*_yyy ^ 1 ^ 000_x* ^ x*_yyy
+
+# 6 = yyy ^ 1 ^ yyy
+
+
+# Must be odd (because )
+
+#   - 2,4 -- B = A % 8 (last 3 bits of A value)
+#   - 1,1 -- B = B ^ 1 (B XOR 001)
+#   - 7,5 -- C = A / 2**B
+#   - 4,6 -- B = B ^ C
+#   - 1,4 -- B = B ^ A
+#   - 0,3 -- A = A / 8 (trim the least 3 bits of A)
+#   - 5,5 -- Write contents of B
+#   - 3,0 -- Repeat
 
 # Observations:
 # I always jump at the end of the program to the beginning
@@ -143,16 +93,7 @@ program = list(map(int, raw[4].split(":")[1].split(",")))
 # So, I just need to craft the XOR pattern, 3 bits at a time, to produce
 # the values in the program.
 
-p = Program((8**15)+1, B, C, program)
-p.execute()
-print(p.program)
-print(p.output)
-
-# Instructions that involve register A
-
-# puzzle = Program(A, B, C, program)
-# puzzle.execute()
-# print(puzzle.output)
-#
-# result = ",".join(map(str, puzzle.output))
-# print(result)
+# p = Program((8**15)+1, B, C, program)
+# p.execute()
+# print(p.program)
+# print(p.output)
