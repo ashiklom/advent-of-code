@@ -48,38 +48,38 @@ class Program:
         }
         fnlist[opcode](op)
 
-    def adv(self, op: int) -> None:
+    def adv(self, op: int) -> None:     # opcode 0
         self.A = int(self.A / (2 ** self.combo(op)))
         self.instruction_ptr += 2
 
-    def bxl(self, op: int):
+    def bxl(self, op: int):             # opcode 1
         self.B = self.B ^ op
         self.instruction_ptr += 2
 
-    def bst(self, op: int) -> None:
+    def bst(self, op: int) -> None:     # opcode 2 
         self.B = self.combo(op) % 8
         self.instruction_ptr += 2
 
-    def jnz(self, op: int) -> None:
+    def jnz(self, op: int) -> None:     # opcode 3
         if self.A == 0:
             self.instruction_ptr += 2
             return
         self.instruction_ptr = op
 
-    def bxc(self, _) -> None:
+    def bxc(self, _) -> None:           # opcode 4
         self.B = self.B ^ self.C
         self.instruction_ptr += 2
 
-    def out(self, op: int) -> None:
+    def out(self, op: int) -> None:     # opcode 5
         self.output.append(self.combo(op) % 8)
         self.instruction_ptr += 2
 
-    def bdv(self, op: int) -> None:
-        self.B = int(self.A / (2 ** self.combo(op)))
+    def bdv(self, op: int) -> None:     # opcode 6
+        self.B = self.A // (2 ** self.combo(op))
         self.instruction_ptr += 2
 
-    def cdv(self, op: int) -> None:
-        self.C = int(self.A / (2 ** self.combo(op)))
+    def cdv(self, op: int) -> None:     # opcode 7
+        self.C = self.A // (2 ** self.combo(op))
         self.instruction_ptr += 2
 
 
