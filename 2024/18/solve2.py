@@ -2,9 +2,9 @@
 
 from heapq import heappush, heappop
 
-def parse_coord(x: str):
-    x2 = x.strip().split(',')
-    return tuple(map(int, x2))
+def parse_coord(x: str) -> tuple[int, int]:
+    xstr, ystr = x.strip().split(',')
+    return (int(xstr), int(ystr))
 
 def draw(grid: list[list[str]]) -> None:
     print("\n".join("".join(row) for row in grid))
@@ -14,16 +14,13 @@ type coord = tuple[int, int]
 def dist(x: coord, target: coord):
     return abs(x[0]-target[0]) + abs(x[1]-target[1])
 
-def solve(input: str, rowmax: int, colmax: int, ncoord: int):
-    with open(input, "r") as f:
-        raw = f.read().strip()
-
-    coords = list(map(parse_coord, raw.split('\n')))
+def solve(coords: list[coord]):
+    rowmax = 70
+    colmax = 70
 
     grid = [["."]*(colmax+1) for _ in range(rowmax+1)]
-    coords_sub = coords[:ncoord]
 
-    for x,y in coords_sub:
+    for x,y in coords:
         grid[y][x] = "#"
     grid[0][0] = "S"
     grid[-1][-1] = "E"
@@ -37,7 +34,7 @@ def solve(input: str, rowmax: int, colmax: int, ncoord: int):
         heappush(edges, (1 + dist(c, end), 1, c))
 
     steps = 0
-    last_coord = coords_sub[-1]
+    last_coord = coords[-1]
     while edges:
         _, steps, (x, y) = heappop(edges)
         if (x,y) in visited:
@@ -57,13 +54,22 @@ def solve(input: str, rowmax: int, colmax: int, ncoord: int):
 
     return last_coord
 
-ncoords = 1024
-challenge = solve("2024/18/input", 70, 70, ncoords)
-while not challenge:
-    ncoords += 1
-    print(ncoords)
-    challenge = solve("2024/18/input", 70, 70, ncoords)
-    if ncoords > 3450:
-        raise ValueError("Failed to find result")
-print(challenge)
+with open("2024/18/input", "r") as f:
+    raw = f.read().strip()
+
+coords = list(map(parse_coord, raw.split('\n')))
+# Binary search
+result = None
+n = 1024
+rng = [n, len(coords)]
+while (rng[1] - rng[0]) > 1:
+    n = rng[0] + ((rng[1]-rng[0]) // 2)
+    # print(f"{rng[0]} -- {n} -- {rng[1]}")
+    result = solve(coords[:n])
+    if not result:
+        rng[0] = n
+    else:
+        rng[1] = n
+
+print(f"{result} at coord {n}")
 # Answer: (34, 40) (at ncoords = 2906)
