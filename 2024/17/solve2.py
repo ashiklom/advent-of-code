@@ -1,22 +1,37 @@
 #!/usr/bin/env python
 
-from math import log2
-
 # Do the puzzle
 with open("2024/17/input", "r") as f:
     raw = f.read().splitlines()
 
 program = list(map(int, raw[4].split(":")[1].split(",")))
 
-def prog(A):
+def prog_full(A):
+    """
+    Complete program; literal interpretation of instructions.
+    """
     B = A % 8
     B = B ^ 1
-    C = A // (2**B)
+    C = A >> B # (A // 2**B)
     B = B ^ C
     B = B ^ A
-    A = A // 8
+    A = A >> 3 # (A // 8)
     out = B % 8
     return A, out
+
+def prog(A):
+    """
+    Simplified program, from applying XOR algebra and simplifying.
+    """
+    last3 = A % 8
+    shift = last3 ^ 1
+    out = (A >> shift) ^ 1
+    return A >> 3, out % 8
+
+# Check that programs return the same results
+for i in range(2**4):
+    if prog(i) != prog_full(i):
+        raise ValueError(f"Results not equal for {i}")
 
 def run_prog(A):
     result = []
@@ -42,6 +57,14 @@ def expand_solutions(slist: list[int], target: int):
         result.extend(out)
     return result
 
+solve = [0]
+prog_sub = program.copy()
+result = []
+while prog_sub:
+    p = prog_sub.pop()
+    solve = expand_solutions(solve, p)
+    result.append((p, solve))
+
 # Get the solution for the second to last number (the last is zero)
 solve = get_solutions(program[-2])
 prog_sub = program[:-2]
@@ -51,7 +74,7 @@ while prog_sub:
     solve = expand_solutions(solve, p)
     result.append((p, solve))
 
-print(solve)
+p = 4
 
 # Get the solution for the first number
 solve_1 = get_solutions(program[0])
