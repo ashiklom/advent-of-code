@@ -10,20 +10,50 @@ def parse_input(fname: str):
     return (patterns, designs)
 
 def check_design(design, patterns):
-    print(design)
     has_pat = [pat for pat in patterns if pat in design]
     rxp = re.compile(f"^({'|'.join(has_pat)})+$")
     return rxp.match(design)
 
 all_patterns, designs = parse_input("2024/19/input")
 
-# Patterns combining multiple single-letter patterns
+# patsub = all_patterns.copy()
+# pat = set()
+# for i in range(1, 5):
+#     cp = {p for p in all_patterns if len(p) == 1}
+#     rx = re.compile(f"^({'|'.join(pat | cp)})")
+#     patsub = [p for p in patsub if not rx.match(p)]
+
+# Patterns that are combinations of other (shorter) patterns
 # don't need to be checked.
-c1pat = {p for p in all_patterns if len(p) == 1}
-patterns = list(c1pat) + [p for p in all_patterns if (set(p) - c1pat)]
-# design = designs[1]
+c1p = {p for p in all_patterns if len(p) == 1}
+# 1-character -- just use set logic
+patsub = [p for p in all_patterns if (set(p) - c1p)]
 
-result = [check_design(d, patterns) for d in designs]
+# 2-character patterns; use regex
+c2p = {p for p in patsub if len(p) == 2}
+c2prx = re.compile(f"^({'|'.join(c1p | c2p)})+$")
+patsub = [p for p in patsub if not c2prx.match(p)]
 
-subset = [r for r in result if r]
-print(len(subset))
+# 3-character patterns; use regex
+c3p = {p for p in patsub if len(p) == 3}
+c3prx = re.compile(f"^({'|'.join(c1p | c2p | c3p)})+$")
+patsub = [p for p in patsub if not c3prx.match(p)]
+
+# 4-character patterns
+c4p = {p for p in patsub if len(p) == 4}
+c4prx = re.compile(f"^({'|'.join(c1p | c2p | c3p | c4p)})+$")
+patsub = {p for p in patsub if not c4prx.match(p)}
+
+patterns = c1p | c2p | c3p | c4p | patsub
+
+# Filter 1-letter designs quickly
+d1 = [d for d in designs if not check_design(d, c1p)]
+print(len(d1))
+d2 = [d for d in d1 if not check_design(d, c1p | c2p)]
+print(len(d2))
+d3 = [d for d in d2 if not check_design(d, c1p | c2p | c3p)]
+print(len(d3))
+d4 = [d for d in d3 if not check_design(d, c1p | c2p | c3p | c4p)]
+print(len(d4))
+
+print(len(designs) - len(d4))
