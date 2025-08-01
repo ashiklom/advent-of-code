@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+from itertools import product
+
 # Do the puzzle
 with open("2024/17/input", "r") as f:
     raw = f.read().splitlines()
@@ -40,15 +42,36 @@ def run_prog(A):
         result.append(out)
     return result
 
-def get_solutions(A: int) -> list[int]:
-    solutions = []
-    for i in range(2**4):
+def get_solution_bits(A: int) -> list[int]:
+    """
+    Get possible values by mainpulating bits.
+    """
+    solutions = set()
+    # <6 bits is tricky...
+    for i in range(32):
         _, x = prog(i)
         if x == A:
-            solutions.append(i)
-    return solutions
+            solutions.add(i)
+    # 6 bits -- just combine
+    Abits = format(A ^ 1, '03b')
+    solutions.add(int(Abits + format(3^1, '03b'), 2))
+    for shift in range(4, 8):
+        shiftbits = format(shift ^ 1, '03b')
+        nx = shift - 3
+        xbits = [''.join(p) for p in product('01', repeat=nx)]
+        for xb in xbits:
+            bits = Abits + xb + shiftbits
+            solutions.add(int(bits, 2))
+    return sorted(solutions)
 
-def expand_solutions(slist: list[int], target: int):
+s2 = get_solution_bits(3)
+# for s in s2:
+#     if prog(s)[1] != 2:
+#         raise ValueError
+
+prog(int('00000', 2))
+
+def expand_end(slist: list[int], target: int):
     result = []
     for s in slist:
         s2 = s << 3
@@ -57,12 +80,17 @@ def expand_solutions(slist: list[int], target: int):
         result.extend(out)
     return result
 
+def expand_start(slist: list[int], target: int):
+    pass
+
+s = get_solutions(2, 10)
+
 solve = [0]
 prog_sub = program.copy()
 result = []
 while prog_sub:
     p = prog_sub.pop()
-    solve = expand_solutions(solve, p)
+    solve = expand_end(solve, p)
     result.append((p, solve))
 
 # Get the solution for the second to last number (the last is zero)
@@ -71,7 +99,7 @@ prog_sub = program[:-2]
 result = [(program[-2], solve)]
 while prog_sub:
     p = prog_sub.pop()
-    solve = expand_solutions(solve, p)
+    solve = expand_end(solve, p)
     result.append((p, solve))
 
 p = 4
@@ -79,10 +107,10 @@ p = 4
 # Get the solution for the first number
 solve_1 = get_solutions(program[0])
 
-expand_solutions(solve_1[0])
+expand_end(solve_1[0])
 
 check2 = []
-[check2.extend(expand_solutions(s)) for s in solve_1]
+[check2.extend(expand_end(s)) for s in solve_1]
 check2 = set(check2)
 
 solutions = {p: get_solutions(p) for p in set(program)}
