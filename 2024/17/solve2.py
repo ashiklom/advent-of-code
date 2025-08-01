@@ -9,32 +9,154 @@ with open("2024/17/input", "r") as f:
 program = list(map(int, raw[4].split(":")[1].split(",")))
 
 def prog(A):
-    # 2,4 -- B = combo % 8
     B = A % 8
-    # 1,1 -- B = B ^ op
     B = B ^ 1
-    # 7,5 -- C = int(A / 2**combo)
-    C = int(A / (2**B))
-    # 4,6 -- B = B ^ C
+    C = A // (2**B)
     B = B ^ C
-    # 1,4 -- B ^ op
-    B = B ^ 4
-    # 0,3
-    A = int(A / 8)
-    # 5,5
-    print(B % 8)
-    # 3,0 -- reset
-    return A
+    B = B ^ A
+    A = A // 8
+    out = B % 8
+    return A, out
+
+def run_prog(A):
+    result = []
+    while A != 0:
+        A, out = prog(A)
+        result.append(out)
+    return result
+
+def get_solutions(A: int) -> list[int]:
+    solutions = []
+    for i in range(2**4):
+        _, x = prog(i)
+        if x == A:
+            solutions.append(i)
+    return solutions
+
+def expand_solutions(slist: list[int], target: int):
+    result = []
+    for s in slist:
+        s2 = s << 3
+        checks = [s2 + i for i in range(8)]
+        out = [c for c in checks if prog(c)[1] == target]
+        result.extend(out)
+    return result
+
+# Get the solution for the second to last number (the last is zero)
+solve = get_solutions(program[-2])
+prog_sub = program[:-2]
+result = [(program[-2], solve)]
+while prog_sub:
+    p = prog_sub.pop()
+    solve = expand_solutions(solve, p)
+    result.append((p, solve))
+
+print(solve)
+
+# Get the solution for the first number
+solve_1 = get_solutions(program[0])
+
+expand_solutions(solve_1[0])
+
+check2 = []
+[check2.extend(expand_solutions(s)) for s in solve_1]
+check2 = set(check2)
+
+solutions = {p: get_solutions(p) for p in set(program)}
+solve_list = [solutions[k] for k in program]
+
+# def shift(s: list[int], i: int):
+#     return [x << i for x in s] 
+#
+# solve_shifted = [shift(s, i) for i, s in enumerate(solve_list)]
+
+# Now, whittle down the solutions
+def compare_solutions(a, b):
+    ra = []
+    rb = []
+    for aa in a:
+        for bb in b:
+            abits = bin(aa >> 3)[2:]
+            bbits = bin(bb)[5:]
+            if abits == bbits:
+                ra.append(aa)
+                rb.append(bb)
+    return ra, rb
+
+{prog(a)[1] for a in solve_list[1]}
+[bin(s) for s in solve_list[0]]
+
+a0, b1 = compare_solutions(solve_list[0], solve_list[1])
+a1, b2 = compare_solutions(b1, solve_list[2])
+a2, b3 = compare_solutions(b2, solve_list[3])
+
+solutions = []
+for i in range(1024):
+    _, x = prog(i)
+    if x == 3:
+        solutions.append(i)
+
+[bin(s) for s in solutions]
+
+prog(int(0b01_1_010_101_010))
+prog(int(0b11_1_010_101_010))
+
+# def prog(A):
+#     # A = abc_def_ghi_yyy
+#     # 2,4 -- B = combo % 8
+#     # B = yyy
+#     B = A % 8
+#     # 1,1 -- B = B ^ op
+#     # B = yyy^1
+#     B = B ^ 1
+#     # 7,5 -- C = int(A / 2**combo)
+#     # C = 000_00a_bcd_efg (suppose yyy^1=5)
+#     C = int(A / (2**B))
+#     # 4,6 -- B = B ^ C
+#     # B = (000_000_000_yyy ^ 000_00a_bcd_efg)
+#     # B = (0_000_yyy ^ a_bcd_efg)
+#     # B = (a_bcd_(yyy^efg))
+#     #   B = (yyy^efg)
+#     B = B ^ C
+#     # 1,4 -- B ^ op
+#     # B = (a_bcd_???) ^ (0_000_100)
+#     # B = (a_bcd_???) ^ (0_000_100)
+#     B = B ^ 4
+#     # 0,3
+#     A = int(A / 8)
+#     # 5,5
+#     # out = Last 3 bits of A
+#     out = B % 8
+#     # 3,0 -- reset
+#     return A, out
+
+# Take the last 3 bits of A
+# Do XOR with 1
+# Shift A by ^^ many bits and grab the last 3 bits
+# Take the XOR of last 3 bits of A, result of ^^, and 4.
+# That's the output.
+
+# In reverse:
+# a1 = output ^ 4
+# a1 == last 3 bits of A ^ bitshifted bits of A
+
+# A = xxx_xxx_xxx_yyy
+# A/2**
+
+# X ^ 4 ^ (A/2**(A%8 ^ 1))
+# (A >> (yyy ^ 1)) ^ 4 ^ X
 
 A = 59397658
 n = int(log2(A) / 3) + 1
 for _ in range(n):
     A = prog(A)
 
-for i in range(30):
+A = int("100_000_000_110", 2)
+while A > 0:
     # print(f"{i}, {prog(i)}")
-    a, b = prog(i)
-    print(f"{i}, {bin(i)} => {bin(a), bin(b)}")
+    print(f"{A} = {bin(A)}", end=" --> ")
+    A, out = prog(A)
+    print(f"{out} = {bin(out)}")
 
 # Prog: [2,4, 1,1, 7,5, 4,6, 1,4, | 0,3, 5,5, 3,0]
 # Out: 4,6,1,4,2,1,3,1,6
