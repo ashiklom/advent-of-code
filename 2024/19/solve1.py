@@ -9,19 +9,21 @@ def parse_input(fname: str):
     designs = raw[2:]
     return (patterns, designs)
 
-def solve(input: str):
-    patterns, designs = parse_input(input)
-    rxp = re.compile(f"^({'|'.join(patterns)})+$")
-    results = []
-    for i, d in enumerate(designs):
-        print(f"{i}/{len(designs)}")
-        if rxp.match(d):
-            results.append(d)
-    return results
+def check_design(design, patterns):
+    print(design)
+    has_pat = [pat for pat in patterns if pat in design]
+    rxp = re.compile(f"^({'|'.join(has_pat)})+$")
+    return rxp.match(design)
 
-test = solve("2024/19/testinput")
-if len(test) != 6:
-    raise ValueError(f"Test failed. Expected 6, got {len(test)}")
+all_patterns, designs = parse_input("2024/19/input")
 
-challenge = solve("2024/19/input")
-print(len(challenge))
+# Patterns combining multiple single-letter patterns
+# don't need to be checked.
+c1pat = {p for p in all_patterns if len(p) == 1}
+patterns = list(c1pat) + [p for p in all_patterns if (set(p) - c1pat)]
+# design = designs[1]
+
+result = [check_design(d, patterns) for d in designs]
+
+subset = [r for r in result if r]
+print(len(subset))
