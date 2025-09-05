@@ -51,9 +51,16 @@ def get_cheats(rc, n, pos):
             cheats += 1
     return cheats
 
+# No point searching for stuff near start
+psub = {key: val for key, val in pos.items() if val >= 100}
+psub = dict(sorted(psub.items(), key=lambda kv: kv[1], reverse=True))
+
 cheats = 0
 for (r,c), n in pos.items():
-    cheats += get_cheats((r,c), n, pos)
+    psub.popitem()
+    if not psub:
+        break
+    cheats += get_cheats((r,c), n, psub)
 
 print(cheats)
 # 986545
