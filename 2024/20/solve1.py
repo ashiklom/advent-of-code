@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-with open("./2024/20/testinput", "r") as f:
+with open("./2024/20/input", "r") as f:
     rows = f.read().splitlines()
     grid = [list(s) for s in rows]
 
@@ -44,7 +44,5 @@ for (r,c), n in pos.items():
                 cheats[delta] = 0
             cheats[delta] += 1
 
-print(cheats)
-
-# {4: 14, 2: 14, 12: 3, 10: 2, 8: 4, 6: 2, 40: 1, 64: 1,
-# 38: 1, 36: 1, 20: 1}
+cmax = 100
+print(sum(val for key, val in cheats.items() if key >= cmax))
