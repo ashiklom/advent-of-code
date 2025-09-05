@@ -5,27 +5,29 @@ def score(s: str, pat, scores=None):
         scores = {}
     if s in scores:
         return scores[s]
-    if len(s) == 1:
-        if s not in pat:
-            scores[s] = 0
-            return 0
+    psub = {p: np for p, np in pat.items() if p in s}
+    if not psub:
+        scores[s] = 0
+        return 0
+    if s[0] == s:
         scores[s] = 1
         return 1
     result = 0
-    for p in pat:
-        if not s.startswith(p):
+    for p, np in psub.items():
+        if s[:np] != p:
             continue
-        right = s[len(p):]
+        right = s[np:]
         # print(f"{s} - {p}, {right}")
         if not right:
             result += 1
             continue
-        result += score(right, pat, scores=scores)
+        result += score(right, psub, scores=scores)
     # print(f"{s} = {result}")
     scores[s] = result
     return result
 
 patterns = {"r", "wr", "b", "g", "bwu", "rb", "gb", "br"}
+patterns = {s: len(s) for s in patterns}
 
 tests = {
     "brwrr": 2,
@@ -43,14 +45,8 @@ scores = {}
 fname = "./2024/19/input"
 with open(fname, "r") as f:
     raw = f.read().splitlines()
-patterns = {s.strip() for s in raw[0].split(",")}
+patterns_l = {s.strip() for s in raw[0].split(",")}
+patterns = {s: len(s) for s in patterns_l}
 designs = raw[2:]
-
-# print(score(designs[0], patterns, scores))
-# with open("./2024/19/bad") as f:
-#     bad = f.read().splitlines()
-#
-# print(sorted(patterns, key=len))
-# score(bad[0], patterns)
 
 print(sum(score(d, patterns, scores) for d in designs))
