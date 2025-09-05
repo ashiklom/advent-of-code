@@ -36,8 +36,17 @@ def get_cheats(rc, n, pos):
     r,c = rc
     cheats = 0
     for key, val in pos.items():
-        tdist = abs(r-key[0]) + abs(c-key[1])
-        delta = val - n - tdist 
+        rdist = (r-key[0])
+        if not -20 <= rdist <= 20:
+            continue
+        rd = abs(rdist)
+        cdist = (c-key[1])
+        clo = -20 + rd
+        chi = 20 - rd
+        if not clo <= cdist <= chi:
+            continue
+        tdist = rd + abs(cdist)
+        delta = val - n - tdist
         if tdist <= 20 and delta >= 100:
             cheats += 1
     return cheats
@@ -47,4 +56,5 @@ for (r,c), n in pos.items():
     cheats += get_cheats((r,c), n, pos)
 
 print(cheats)
+# 986545
 
