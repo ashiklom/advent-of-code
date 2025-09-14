@@ -1,43 +1,27 @@
-from itertools import chain, pairwise, permutations, product
-from math import prod
+from itertools import chain, pairwise, product
+from functools import cache
 
-# +---+---+---+
-# | 7 | 8 | 9 |
-# +---+---+---+
-# | 4 | 5 | 6 |
-# +---+---+---+
-# | 1 | 2 | 3 |
-# +---+---+---+
-#     | 0 | A |
-#     +---+---+
+# 789
+# 456
+# 123
+#  0A
 numpad = {
     "A": (3,2),
-    0: (3,1),
-    1: (2,0),
-    2: (2,1),
-    3: (2,2),
-    4: (1,0),
-    5: (1,1),
-    6: (1,2),
-    7: (0,0),
-    8: (0,1),
-    9: (0,2)
+    "0": (3,1),
+    "1": (2,0),
+    "2": (2,1),
+    "3": (2,2),
+    "4": (1,0),
+    "5": (1,1),
+    "6": (1,2),
+    "7": (0,0),
+    "8": (0,1),
+    "9": (0,2)
 }
 
-#     +---+---+
-#     | ^ | A |
-# +---+---+---+
-# | < | v | > |
-# +---+---+---+
-dpad = {
-    "A": (0,2),
-    "^": (0,1),
-    "<": (1,0),
-    "v": (1,1),
-    ">": (1,2)
-}
-
-dpad_pars = {
+#  ^A
+# <v>
+dpad_dict = {
     "A^": ["<A"],
     "Av": ["v<A", "<vA"],
     "A<": ["v<<A"],
@@ -52,7 +36,7 @@ dpad_pars = {
     "<^": [">^A"],
     "<v": [">A"],
     ">A": ["^A"],
-    ">^": ["<^A", "^>A"],
+    ">^": ["<^A"],
     ">v": ["<A"],
     ">>": ["A"],
     "^^": ["A"],
@@ -61,31 +45,30 @@ dpad_pars = {
     "AA": ["A"]
 }
 
-#   029A = <A^A^^>AvvA
-#   980A
-#   179A
-#   456A
-#   379A = ^A<<^^A>>AvvA
+def get_pairs(string: str) -> list[str]:
+    pairs = pairwise("A" + string)
+    return ["".join(pair) for pair in pairs]
 
-code = list("^A<<^^A>>AvvA")
-code_pairs = list(["".join(pair) for pair in pairwise(code)])
-bot1 = [dpad_pars[k] for k in code_pairs]
-bot1_perm = list("".join(p) for p in product(*bot1))
-bot2 = [dpad_pars["".join(k)] for code in bot1_perm for k in pairwise(code)]
-list(map(len, bot2))
-bot2_perm = list("".join(p) for p in product(*bot2))
-
-# 789
-# 456
-# 123
-#  0A
+@cache
+def get_len(string: str, nbots: int) -> int:
+    if nbots == 0:
+        return len(string)
+    pairs = get_pairs(string)
+    codes = [dpad_dict[pair] for pair in pairs]
+    code_prod = product(*codes)
+    result = 0
+    for code in code_prod:
+        length = sum(get_len(c, nbots-1) for c in code)
+        if not result or (length < result):
+            result = length
+    return result
 
 # Punch numpad
-def move_pad(start, end, pad):
+def move_numpad(start, end):
     if start == end:
-        return ["A"]
-    r0, c0 = pad[start]
-    r1, c1 = pad[end]
+        return [["A"]]
+    r0, c0 = numpad[start]
+    r1, c1 = numpad[end]
     dr = r1 - r0
     dc = c1 - c0
     if dr >= 0:
@@ -97,96 +80,37 @@ def move_pad(start, end, pad):
     else:
         cmv = ["<"] * abs(dc)
     if not rmv:
-        return cmv + ["A"]
+        return [cmv + ["A"]]
     if not cmv:
-        return rmv + ["A"]
-    if pad == numpad:
-        if (r0 == 3) and (c1 == 0):
-            return rmv + cmv + ["A"]
-        if (c0 == 0) and (r1 == 3):
-            return cmv + rmv + ["A"]
-    elif pad == dpad:
-        if (r0 == 0) and (c1 == 0):
-            return rmv + cmv + ["A"]
-        if (c0 == 0) and (r1 == 0):
-            return cmv + rmv + ["A"]
+        return [rmv + ["A"]]
+    if (r0 == 3) and (c1 == 0):
+        return [rmv + cmv + ["A"]]
+    if (c0 == 0) and (r1 == 3):
+        return [cmv + rmv + ["A"]]
     options = [rmv + cmv + ["A"], cmv + rmv + ["A"]]
     return options
-    # return cmv + rmv + ["A"]
 
-dpad_pairs = list(permutations(dpad.keys(), 2))
-lst = {(a,b): move_pad(a, b, dpad) for a,b in dpad_pairs}
-lst[("<", "A")]
+def enter_code(code):
+    steps = [move_numpad(a,b) for a,b in pairwise("A"+code)]
+    sprod = product(*steps)
+    return["".join(chain.from_iterable(s)) for s in sprod]
 
-def enter_code(code, pad):
-    steps = [move_pad(a,b, pad) for a,b in pairwise(["A"]+code)]
-    return list(chain.from_iterable(steps))
+def solve_code(code, n):
+    keys = enter_code(code)
+    return min(get_len(k, n) for k in keys)
 
-# print(move_pad("A", 0, numpad))
-# print(move_pad(0, 2, numpad))
-# print(move_pad(2, 9, numpad))
-# print(move_pad(9, "A", numpad))
-
-# "".join(enter_code(enter_code([">", "^", "^", "A"], dpad), dpad))
-# "".join(enter_code(enter_code(["^", "^", ">", "A"], dpad), dpad))
-
-def full_code(code, nbots):
-    dcode = enter_code(code, numpad)
-    for _ in range(0, nbots):
-        dcode = enter_code(dcode, dpad)
-    human = enter_code(dcode, dpad)
-    return human
-
-def get_score(code, nbots):
-    bot3 = full_code(code, nbots)
-    blen = len(bot3)
-    numcode = int("".join(str(c) for c in code[:-1]))
-    return (blen, numcode)
-
-testcodes = [
-    [0, 2, 9, "A"],
-    [9, 8, 0, "A"],
-    [1, 7, 9, "A"],
-    [4, 5, 6, "A"],
-    [3, 7, 9, "A"]
-]
-
-# get_score(testcodes[4], 5)
-#
-# [get_score(code, 1) for code in testcodes]
-# [get_score(code, 25) for code in testcodes]
-
-# ---
-# <v<A>>^AvA^A<vA<AA>>^AAvA<^A>AAvA^A<vA>^AA<A>A<v<A>A>^AAAvA<^A>A
-#    <   A > A  v <<   AA >  ^ AA > A
-#    <A>Av<<AA>^AA>A
-#     ^ A   <<  ^^ A
-#     ^A<<^^A
-#      3    7
-# v<<A>>^AvA^Av<<A>>^AAv<A<A>>^AAvAA^<A>Av<A^>AA<A>Av<A<A>>^AAA<Av>A^A
-#    <   A > A   <   AA  v <   AA >>  ^ A  v  AA ^ A  v <   A
-#    <A>A<AAv<AA>>^AvAA^Av<A
-#     ^ A ^^  <<   A >> A  v
-#     ^A^^<<A>>Av
-#      3    7  9
-
-# Yes: <vA<AA>>^AAvA<^A>AAvA^A<vA>^AA<A>A<v<A>A>^AAAvA<^A>A
-# No:  v<<A>>^AAv<A<A>>^AAvAA^<A>Av<A^>AA<A>Av<A<A>>^AAA<Av>A^A
+# testcodes = [
+#     "029A",
+#     "980A",
+#     "179A",
+#     "456A",
+#     "379A"
+# ]
+# testsolve = {k: solve_code(k, 2) for k in testcodes}
 
 with open("2024/21/input", "r") as f:
-    raw = f.read().splitlines()
+    codes = f.read().splitlines()
 
-codes = list()
-for code in raw:
-    lst = []
-    for char in code:
-        if char == "A":
-            lst.append("A")
-        else:
-            lst.append(int(char))
-    codes.append(lst)
-
-scores = [get_score(code, 1) for code in codes]
-total = sum(a*b for a,b in scores)
-print(total)
-
+# part1 = sum(solve_code(c, 2) * int(c[:-1]) for c in codes)
+part2 = sum(solve_code(c, 25) * int(c[:-1]) for c in codes)
+print(part2)
