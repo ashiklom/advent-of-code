@@ -19,7 +19,7 @@ def mutual_intersect(net: set):
     result = net.copy()
     while True:
         nmap = map(lambda x: d[x], result)
-        mutual = set(reduce(lambda x,y: x.intersection(y), nmap))
+        mutual = set(reduce(lambda x,y: x.intersection(y), nmap), next(nmap))
         if not mutual:
             break
         result |= mutual
