@@ -1,90 +1,95 @@
 #!/usr/bin/env python
 
-from operator import and_, or_, xor
+from copy import deepcopy
+from itertools import chain
 
-def parse_gate(raw_gate: str):
-    sp = raw_gate.split(" ")
-    inputs = (sp[0], sp[2])
-    target = sp[4]
-    match sp[1]:
-        case "AND":
-            gatefn = and_
-        case "OR":
-            gatefn = or_
-        case "XOR":
-            gatefn = xor
-        case _:
-            raise ValueError(f"Invalid string '{raw_gate}'")
-    return (gatefn, inputs, target)
+def parse_gate(g):
+    gsp = g.split(" ")
+    return (gsp[-1], (set([gsp[0], gsp[2]]), gsp[1]))
 
-with open("2024/24/testinput_part2", "r") as f:
-# with open("2024/24/input", "r") as f:
+with open("2024/24/input", "r") as f:
     raw = f.read()
 
 _, raw_gates = [x.splitlines() for x in raw.split("\n\n")]
-gates = [parse_gate(g) for g in raw_gates]
+gates = dict(parse_gate(g) for g in raw_gates)
 
-def nums2wires(a: int, b: int, bitmax: int = 6):
-    MAX = 2**bitmax
-    if a >= MAX:
-        raise ValueError(f"{a=} >= {MAX}")
-    if b >= 32:
-        raise ValueError(f"{b=} >= {MAX}")
-    abin = list(f"{a:0{bitmax}b}")
-    bbin = list(f"{b:0{bitmax}b}")
-    c = a + b
-    cbin = list(f"{c:0{bitmax}b}")
-    wires = dict()
-    for i, abit in enumerate(reversed(abin)):
-        wires[f"x0{i}"] = int(abit)
-    for i, bbit in enumerate(reversed(bbin)):
-        wires[f"y0{i}"] = int(bbit)
-    for i, cbit in enumerate(reversed(cbin)):
-        wires[f"z0{i}"] = int(cbit)
-    return wires
+n = 45
+zs = [f"z{i:02d}" for i in range(0, n+1)]
+zgates = {z: gates[z] for z in zs}
 
-wires_t1 = nums2wires(27, 3)
+# First, the obvious check: Z bit is always the result of an XOR.
+# If that's not the case, we know the wires are wrong.
+bad_zgates = {k: v for k,v in zgates.items() if v[1] != "XOR"}
+bad_zgates.pop("z45")
 
-########################################
+def find_wire(target, gates):
+    for k, v in gates.items():
+        if v == target:
+            return k
+    else:
+        raise ValueError("Not found")
 
-# IDEA: Given correct X, Y, and Z (from above),
-# try to solve for X, Y, and Z (one missing) and
-# compare the answers.
-# To go from Z to X and Y, I'll need to reverse the gates.
+def find_correct_wire(wrong_wire, gate_dict):
+    kx = wrong_wire.replace("z", "x")
+    ky = wrong_wire.replace("z", "y")
+    pt1_target = (set([kx, ky]), "XOR")
+    pt1_wire = find_wire(pt1_target, gate_dict)
 
-def solve(gate_orig, wires_orig):
-    gates = gate_orig.copy()
-    wires = wires_orig.copy()
-    ng = len(gates)
-    ctr = 0
-    while gates and ctr < ng:
-        g = gates.pop(0)
-        inputs = g[1]
-        if (inputs[0] in wires) and (inputs[1] in wires):
-            i0 = wires[inputs[0]]
-            i1 = wires[inputs[1]]
-            wires[g[2]] = g[0](i0, i1)
-            ng = len(gates)
-            ctr = 0
-        else:
-            gates.append(g)
-            ctr += 1
-    return wires
+    # Find all XOR wires involving pt1_wire
+    targets_w_pt1 = {}
+    for k, v in gate_dict.items():
+        if (v[1] == "XOR") and (pt1_wire in v[0]):
+            targets_w_pt1[k] = v
+    if len(targets_w_pt1) > 1:
+        raise ValueError("Multiple possible wires")
 
-w = solve(gates, wires_t1)
+    right_wire = next(iter(targets_w_pt1.keys()))
+    return (wrong_wire, right_wire)
 
-def compare_wires(w0, w1):
-    diffs = {}
-    for k in w0.keys():
-        if w0[k] != w1[k]:
-            diffs[k] = (w0[k], w1[k])
-    return diffs
+wire_swaps = []
+for wire in bad_zgates.keys():
+    wire_swaps.append(find_correct_wire(wire, gates))
 
-compare_wires(wires_t1, w)
+gates_fixed = deepcopy(gates)
+for wrong, right in wire_swaps:
+    gates_fixed[wrong] = gates[right]
+    gates_fixed[right] = gates[wrong]
 
+# Now, a less obvious check: One of the wires involved in the Z bit should be 
+# an XOR of the corresponding X and Y bits.
+# We already found 3 bad wires above, so we only need to find one more now.
+for z in zs[2:n]:
+    x = z.replace("z", "x")
+    y = z.replace("z", "y")
+    gz = gates_fixed[z]
+    wires = list(gz[0])
+    wire_vals = [gates_fixed[w] for w in wires]
+    xy = ({x, y}, "XOR")
+    if xy not in wire_vals:
+        print(f"Bad wire: {z}")
+        bad_wire = z
+        break
+    wire_vals.pop(wire_vals.index(xy))
+    if wire_vals[0][1] != "OR":
+        print(f"Bad wire: {z}")
+else:
+    raise ValueError("No bad wires found")
 
-zkeys = sorted((k for k in wires.keys() if k.startswith("z")), reverse=True)
-zvals = [str(wires[z]) for z in zkeys]
-zbits = "".join(zvals)
-result = int(zbits, 2)
-print(result)
+kx = bad_wire.replace("z", "x")
+ky = bad_wire.replace("z", "y")
+pt1_target = (set([kx, ky]), "XOR")
+pt1_wire = find_wire(pt1_target, gates_fixed)
+bad_inputs = list(gates_fixed[bad_wire][0])
+
+for bad_input in bad_inputs:
+    gtype = gates_fixed[bad_input][1]
+    if gtype not in ("OR", "XOR"):
+        wrong_wire = bad_input
+        break
+else:
+    raise ValueError("No bad inputs found")
+
+wire_swaps.append((pt1_wire, wrong_wire))
+
+answer = sorted(chain.from_iterable(wire_swaps))
+print(",".join(answer))
