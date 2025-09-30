@@ -6,7 +6,7 @@ if [[ ! -f token ]]; then
 fi
 
 SESSION="$(cat token)"
-HTML2TEXT="python -m html2text"
+HTML2TEXT="python -m html2text --body-width 0"
 
 for year in {2020..2024}; do
   for day in {1..25}; do
