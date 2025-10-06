@@ -6,7 +6,7 @@ if [[ ! -f token ]]; then
 fi
 
 SESSION="$(cat token)"
-HTML2TEXT="python -m html2text --body-width 0"
+HTML2TEXT="html2text"
 
 for year in {2020..2024}; do
   for day in {1..25}; do
@@ -15,7 +15,7 @@ for year in {2020..2024}; do
     echo "Retrieving $ddir"
     mkdir -p $ddir
     if [[ ! -f "$ddir/desc.txt" ]]; then
-      if $HTML2TEXT --version &> /dev/null; then
+      if $HTML2TEXT -version &> /dev/null; then
         curl -s https://adventofcode.com/$year/day/$day | $HTML2TEXT > "$ddir/desc.txt"
       else
         echo "html2text not available. Falling back to HTML"
