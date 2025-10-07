@@ -10,6 +10,9 @@ import qualified Data.Either as Either
 import Data.Map (Map)
 import qualified Data.Map as Map
 import qualified Data.Maybe as Maybe
+import qualified Data.List as List
+import Data.Ord (comparing)
+import qualified Data.Ord as Data.List
 
 getCards :: Int -> Text -> [Int]
 getCards i line = map (i+) [1..length isect]
@@ -26,18 +29,16 @@ calcNCards cache nmap num = case Map.lookup num cache of
   Just count -> (count, cache)
   Nothing -> (total, newcache)
     where total = 1 + sum counts
-          totcache = Map.insert num total cache
-          newcache = Map.unions (cache:totcache:caches)
+          newcache = Map.insert num total cache
           numlist = Maybe.fromMaybe [] (Map.lookup num nmap)
-          (counts, caches) = unzip $ map (calcNCards cache nmap) numlist
-          -- counts = map (calcNCards nmap) (Maybe.mapMaybe (`Map.lookup` nmap) nums)
+          (counts, _) = unzip $ map (calcNCards cache nmap) numlist
 
 main :: IO ()
 main = do
   input <- readFile "2023/04/input"
   let contents = Text.lines $ Text.pack input
       cardmap = Map.fromList $ zip [1..] $ zipWith getCards [1..] contents
-      cardlist = concat $ Map.elems cardmap
+      cardlist = List.sortBy (comparing Data.List.Down) $ concat $ Map.elems cardmap
       (counts, _) = unzip $ map (calcNCards Map.empty cardmap) cardlist
       result = sum counts + length cardmap
     in print result
