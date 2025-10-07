@@ -12,15 +12,20 @@ getPred pred s = case findIndex pred s of
             in (n, nums) : getPred pred rest
   Nothing -> []
 
-fixCols :: [(Int, String)] -> [(Int, String)]
+fixCols :: [(Int, [a])] -> [(Int, [a])]
 fixCols pairs = zip new (map snd pairs)
   where (horig:torig) = map fst pairs
         lens = map (\ (_,num) -> length num) pairs
         new = scanl1 (+) $ horig : zipWith (+) torig lens
 
 getNums = fixCols . getPred isDigit
-getGears = fixCols . getPred (== '*')
 makeMap = Map.fromList . concat . zipWith (\ r stuff -> map (\ (c, v) -> ((r, c), v)) stuff) [0..]
+
+getGears :: [String] -> [(Int, Int)]
+getGears s =
+  let gearlist = map (elemIndices '*') s
+      gearpairs = zipWith (\ r c -> map (r,) c) [0..] gearlist
+  in concat gearpairs 
 
 type Coord = (Int, Int)
 type ID = Int
@@ -34,10 +39,7 @@ getProd :: (Int, Int) -> Map Coord ID -> Map ID String -> Int
 getProd (r, c) coord2id id2num
   | length nums == 2 = product nums
   | otherwise = 0
-  where up = r-1
-        down = r+1
-        left = c-1
-        right = c+1
+  where (up, down, left, right) = (r-1, r+1, c-1, c+1)
         ups = map (up,) [left..right]
         downs = map (down,) [left..right]
         row = [(r,left), (r,right)]
@@ -56,7 +58,7 @@ main = do
       coord2id = Map.fromList $ concat coord2id_list
       id2num = Map.fromList id2num_list
       -- Don't need to make gears a Map.
-      gears = makeMap $ map getGears contents
-      gprod = map (\g -> getProd g coord2id id2num) (Map.keys gears)
+      gears = getGears contents
+      gprod = map (\g -> getProd g coord2id id2num) gears
       result = sum gprod
     in print result
