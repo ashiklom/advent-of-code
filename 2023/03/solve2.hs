@@ -22,21 +22,17 @@ getNums = fixCols . getPred isDigit
 getGears = fixCols . getPred (== '*')
 makeMap = Map.fromList . concat . zipWith (\ r stuff -> map (\ (c, v) -> ((r, c), v)) stuff) [0..]
 
--- Expand nums map to two maps:
--- First is id -> num
--- Second is idxs -> id
-expandNum :: Map (Int, Int) String -> (Map (Int, Int) Int, Map Int String)
-expandNum nmap = 
-  let idmap = Map.fromList $ zip [0..] (Map.elems nmap)
-      getPos (r,c) v = map (,v) (map (r,) [c..(c+(length v)-1)])
-      posmap = Map.fromList $ concat $ Map.mapWithKey getPos nmap
-      result = zip [0..] ()
-      (poslist, idlist) = unzip result
-  in (posmap, idmap)
+type Coord = (Int, Int)
+type ID = Int
 
-getProd :: ((Int, Int), a) -> Map (Int, Int) String -> Int
-getProd ((r, c), _) nummap
-  | length nums == 2 = foldr1 (*) nums
+expandNum :: Int -> (Coord, String) -> ([(Coord, ID)], (ID, String))
+expandNum i ((r, c), val) = (coord2id, id2num)
+  where coord2id = map ((,i) . (r,)) [c..(c - 1 + length val)]
+        id2num = (i, val)
+
+getProd :: (Int, Int) -> Map Coord ID -> Map ID String -> Int
+getProd (r, c) coord2id id2num
+  | length nums == 2 = product nums
   | otherwise = 0
   where up = r-1
         down = r+1
@@ -46,16 +42,21 @@ getProd ((r, c), _) nummap
         downs = map (down,) [left..right]
         row = [(r,left), (r,right)]
         checks = concat [ups, downs, row]
-        numstrs = mapMaybe (`Map.lookup` nummap) checks
+        findnum ij = Map.lookup ij id2num
+        findid ij = Map.lookup ij coord2id
+        numstrs = nub $ mapMaybe findnum $ mapMaybe findid checks
         nums = map (\x -> read x :: Int) numstrs
 
 main :: IO ()
 main = do
-  input <- readFile "2023/03/testinput"
+  input <- readFile "2023/03/input"
   let contents = lines input
       lnums = makeMap $ map getNums contents
-      (num_id, num_pos) = expandNum lnums
+      (coord2id_list, id2num_list) = unzip $ zipWith expandNum [0..] (Map.toList lnums)
+      coord2id = Map.fromList $ concat coord2id_list
+      id2num = Map.fromList id2num_list
+      -- Don't need to make gears a Map.
       gears = makeMap $ map getGears contents
-      gprod = map (`getProd` lnums) (Map.toList gears)
+      gprod = map (\g -> getProd g coord2id id2num) (Map.keys gears)
       result = sum gprod
-    in print (num_id, num_pos)
+    in print result
