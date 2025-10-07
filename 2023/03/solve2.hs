@@ -15,11 +15,11 @@ getPred pred s = case findIndex pred s of
 fixCols :: [(Int, [a])] -> [(Int, [a])]
 fixCols pairs = zip new (map snd pairs)
   where (horig:torig) = map fst pairs
-        lens = map (\ (_,num) -> length num) pairs
+        lens = map (length . snd) pairs
         new = scanl1 (+) $ horig : zipWith (+) torig lens
 
 getNums = fixCols . getPred isDigit
-makeMap = Map.fromList . concat . zipWith (\ r stuff -> map (\ (c, v) -> ((r, c), v)) stuff) [0..]
+makeMap = Map.fromList . concat . zipWith (\r -> map (\ (c, v) -> ((r, c), v))) [0..]
 
 getGears :: [String] -> [(Int, Int)]
 getGears s =
@@ -31,19 +31,17 @@ type Coord = (Int, Int)
 type ID = Int
 
 expandNum :: Int -> (Coord, String) -> ([(Coord, ID)], (ID, String))
-expandNum i ((r, c), val) = (coord2id, id2num)
+expandNum i ((r, c), val) = (coord2id, (i, val))
   where coord2id = map ((,i) . (r,)) [c..(c - 1 + length val)]
-        id2num = (i, val)
+
+neighbors :: Coord -> [Coord]
+neighbors (r, c) = [(r', c') | r' <- [r-1..r+1], c' <- [c-1..c+1], (r',c') /= (r,c)]
 
 getProd :: (Int, Int) -> Map Coord ID -> Map ID String -> Int
-getProd (r, c) coord2id id2num
+getProd gear coord2id id2num
   | length nums == 2 = product nums
   | otherwise = 0
-  where (up, down, left, right) = (r-1, r+1, c-1, c+1)
-        ups = map (up,) [left..right]
-        downs = map (down,) [left..right]
-        row = [(r,left), (r,right)]
-        checks = concat [ups, downs, row]
+  where checks = neighbors gear
         findnum ij = Map.lookup ij id2num
         findid ij = Map.lookup ij coord2id
         numstrs = nub $ mapMaybe findnum $ mapMaybe findid checks
