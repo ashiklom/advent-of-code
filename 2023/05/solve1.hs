@@ -1,7 +1,6 @@
 import System.IO
-import Data.IntMap.Strict (IntMap)
--- import qualified Data.Map as Map
-import qualified Data.IntMap.Strict as Map
+import Data.Array (Array, Ix)
+import qualified Data.Array as Array
 
 import Data.Maybe (Maybe)
 import qualified Data.Maybe as Maybe
@@ -17,17 +16,28 @@ import Data.Foldable (foldl')
 readNums :: Text -> [Int]
 readNums s = map fst $ Either.rights $ map Text.Read.decimal (Text.words s)
 
-expandRange :: [Int] -> IntMap Int
-expandRange [dest,start,range] = Map.fromList $ take range (zip [start..] [dest..])
+type Lookup = (Int -> Maybe Int)
 
-parseBlock :: Text -> IntMap Int
+num2Range :: [Int] -> Lookup
+num2Range [dest,start,range] = fun
+  where fun i
+          | Array.inRange startrange i = Just (dest + Array.index startrange i)
+          | otherwise = Nothing
+          where startrange = (start, start+range-1)
+
+parseBlock :: Text -> [Lookup]
 parseBlock block = nummap
   where (mtype:numlines) = Text.lines block
         numlist = map readNums numlines
-        nummap = Map.unions $ map expandRange numlist
+        nummap = map num2Range numlist
 
-getMap :: IntMap Int -> [Int] -> [Int]
-getMap nmap = map (\x -> Maybe.fromMaybe x (Map.lookup x nmap))
+getValue :: [Lookup] -> Int -> Int
+getValue funs i = case dropWhile Maybe.isNothing (map ($ i) funs) of
+  ((Just x):_) -> x
+  [] -> i
+
+getValues :: [Lookup] -> [Int] -> [Int]
+getValues funs = map (getValue funs)
 
 main = do
   input <- readFile "2023/05/input"
@@ -35,5 +45,5 @@ main = do
       [_, seedstring] = Text.splitOn (Text.pack ":") seedblock
       seeds = readNums seedstring
       blocks = map parseBlock rawblocks
-      result = foldl' (flip getMap) seeds blocks
+      result = foldl' (flip getValues) seeds blocks
     in print $ minimum result
