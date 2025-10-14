@@ -34,9 +34,8 @@ main = do
       starts = filter ((=='A') . last) $ Map.keys smap
       dostep = step (cycle steps) smap
       results = map (dostep 0) starts
-      -- Conveniently, the results just loop over the same steps,
-      -- and do so a prime number of times. So, the answer is just the product 
-      -- of the number of loops (minimum number to hit all loops) times the 
-      -- length of each loop `(length steps)`.
-      answer = (* length steps) $ product $ map ((`div` length steps) . fst) results
+      -- Conveniently, the results just loop over the same steps.
+      -- So, the answer is just the least common multiplier (LCM) of the 
+      -- individual loops.
+      answer = foldr1 lcm $ map fst results
     in print answer
