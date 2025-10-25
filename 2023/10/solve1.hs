@@ -11,14 +11,14 @@ type Coord = (Int, Int)
 type PipeMap = Map Coord Pipe
 
 getPipe :: Char -> Pipe
-getPipe c = case Map.lookup c c2r of
-  (Just r) -> r
-  Nothing -> error "Invalid character"
-  where
-      c2r = Map.fromList [
-         ('|', Vert), ('-', Horiz), ('L', NE), ('J', NW)
-        ,('7', SW), ('F', SE), ('.', Ground), ('S', Start)
-        ]
+getPipe '.' = Ground
+getPipe 'S' = Start
+getPipe '|' = Vert
+getPipe '-' = Horiz
+getPipe 'L' = NE
+getPipe 'J' = NW
+getPipe 'F' = SE
+getPipe '7' = SW
 
 readLine :: Int -> String -> [(Coord, Pipe)]
 readLine row s = zip (map (row,) [0..]) (map getPipe s)
@@ -28,52 +28,70 @@ readInput input = Map.fromList $ concat $ zipWith readLine [0..] (lines input)
 
 data Direction = N | E | S | W deriving (Show, Eq)
 
-type Triple = (Coord, Direction, Pipe)
+move :: Coord -> Direction -> Coord
+move (r,c) N = (r-1, c) 
+move (r,c) S = (r+1, c) 
+move (r,c) E = (r, c+1) 
+move (r,c) W = (r, c-1) 
 
-tryPipe :: PipeMap -> Coord -> Direction -> [Pipe] -> Maybe Triple
+turn :: Pipe -> Direction -> Direction
+turn Vert N = N
+turn Vert S = S
+turn Horiz E = E
+turn Horiz W = W
+turn NE S = E
+turn NE W = N
+turn SE N = E
+turn SE W = S
+turn NW S = W
+turn NW E = N
+turn SW N = W
+turn SW E = S
+turn p d = error $ "Invalid combination: Pipe " ++ show p ++ " Direction " ++ show d
+
+data Position = Position {coord :: Coord, dir :: Direction, pipe :: Pipe} deriving Show
+
+tryPipe :: PipeMap -> Coord -> Direction -> [Pipe] -> Maybe Position
 tryPipe pmap coord dir pipes = do
   pipe <- Map.lookup coord pmap
-  if pipe `elem` pipes then Just (coord, dir, pipe) else Nothing
+  if pipe `elem` pipes then Just (Position {coord=coord, dir=dir, pipe=pipe} ) else Nothing
 
-findStartPipes :: PipeMap -> Coord -> (Triple, Triple)
-findStartPipes pmap (r, c) = (a, b)
+findStartPipes :: PipeMap -> Coord -> (Position, Position)
+findStartPipes pmap (r, c) = case ab of
+  [a, b] -> (a, b)
+  _ -> error $ "Invalid result. Expected two results but found " ++ show (length ab)
   where
     up = ((r-1, c), N, [Vert, SW, SE])
     down = ((r+1, c), S, [Vert, NW, NE])
     left = ((r, c-1), W, [Horiz, NE, SE])
     right = ((r, c+1), E, [Horiz, NW, SW])
-    [a, b] = Maybe.mapMaybe (\(going,coord,pipes) -> tryPipe pmap going coord pipes) [up, down, left, right]
+    ab = Maybe.mapMaybe (\(going,coord,pipes) -> tryPipe pmap going coord pipes) [up, down, left, right]
 
-going :: PipeMap -> Coord -> Direction -> (Coord, Direction, Pipe)
-going pmap (r,c) N = ((r-1, c), N, pmap Map.! (r-1, c))
-going pmap (r,c) E = ((r, c-1), E, pmap Map.! (r, c-1))
-going pmap (r,c) S = ((r+1, c), S, pmap Map.! (r+1, c))
-going pmap (r,c) W = ((r, c+1), W, pmap Map.! (r, c+1))
-
-nextPipe :: PipeMap -> Coord -> Direction -> Pipe -> (Coord, Direction, Pipe)
-nextPipe pmap coord dir pipe = going pmap coord newDir
+nextPipe :: PipeMap -> Position -> Position
+nextPipe pmap x = Position {coord=newCoord, dir=newDir, pipe=pmap Map.! newCoord }
   where
-    newDir = case (dir, pipe) of
-      (N, Vert) -> N
-      (N, NW) -> W
-      (N, NE) -> E
-      (S, Vert) -> S
-      (S, SW) -> W
-      (S, SE) -> E
-      (E, Horiz) -> E
-      (E, NE) -> N
-      (E, SE) -> S
-      (W, Horiz) -> W
-      (W, NW) -> N
-      (W, SE) -> S
+    newDir = turn (pipe x) (dir x)
+    newCoord = move (coord x) newDir
 
-nextPipe' :: PipeMap -> (Coord, Direction, Pipe) -> (Coord, Direction, Pipe)
-nextPipe' pmap (dir, coord, pipe) = nextPipe pmap dir coord pipe
+type History = [Coord]
 
--- nextPipe' pmap a
+navigatePipes :: PipeMap -> (History, History) -> (Position, Position) -> (History, History)
+navigatePipes pmap (hist1, hist2) (p1, p2)
+  | coord p1 `elem` hist2 = (hist1, hist2)
+  | coord p2 `elem` hist1 = (hist1, hist2)
+  | otherwise = navigatePipes pmap (hist1', hist2') (p1', p2')
+    where
+      p1' = nextPipe pmap p1
+      p2' = nextPipe pmap p2
+      hist1' = coord p1' : hist1
+      hist2' = coord p2' : hist2
 
 main = do
-  input <- readFile "2023/10/testinput1"
-  let pmap = readInput input
-      (r0,c0) = head $ Map.keys $ Map.filter (==Start) pmap
-    in print pmap
+  input <- readFile "2023/10/input"
+  let 
+    pmap = readInput input
+    start = head $ Map.keys $ Map.filter (==Start) pmap
+    (a, b) = findStartPipes pmap start
+    (x, y) = navigatePipes pmap ([], []) (a, b)
+    result = max (1 + length x) (1 + length y)
+    in print result
