@@ -86,12 +86,14 @@ navigatePipes pmap (hist1, hist2) (p1, p2)
       hist1' = coord p1' : hist1
       hist2' = coord p2' : hist2
 
-main = do
-  input <- readFile "2023/10/input"
-  let 
+solve :: String -> Int
+solve input = max (1 + length x) (1 + length y)
+  where 
     pmap = readInput input
     start = head $ Map.keys $ Map.filter (==Start) pmap
     (a, b) = findStartPipes pmap start
     (x, y) = navigatePipes pmap ([], []) (a, b)
-    result = max (1 + length x) (1 + length y)
-    in print result
+
+main = do
+  input <- readFile "2023/10/input"
+  print $ solve input
